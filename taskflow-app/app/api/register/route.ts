@@ -8,6 +8,14 @@ export async function POST(request: NextRequest) {
         const body = await request.json();
         
         const validatedData = userRegisterSchema.parse(body);
+
+        const existingUser = await User.where("email", validatedData.email).first()
+        if (existingUser) {
+            return NextResponse.json(
+                { message: 'Email already exists' },
+                { status: 400 }
+            )
+        }
         
         const hashedPassword = await bcrypt.hash(validatedData.password, 10);
         
