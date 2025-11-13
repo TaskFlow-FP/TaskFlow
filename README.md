@@ -1,8 +1,3 @@
 # TaskFlow
 TaskFlow is a smart and intuitive web application designed to help individuals organize their daily work and activities efficiently. Users must be log in using Google, create projects, add and prioritize tasks, and track their progress in real time. Powered by Gemini AI, TaskFlow automatically generates task suggests the best order of execution, enabling users to manage their workflow faster and more intelligently. With a clean interface and seamless Google Calendar integration, TaskFlow makes productivity effortless and collaboration simple.
 
-Page
-1. Login Register
-2. Home: Dashboard tasks, group, update task modal, logout, delete
-3. Create task
-4. Group: member, tasks group
