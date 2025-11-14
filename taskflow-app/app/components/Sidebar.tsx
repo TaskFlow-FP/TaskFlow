@@ -3,15 +3,41 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useState } from "react";
+import Swal from "sweetalert2";
 
 export default function Sidebar() {
   const pathname = usePathname();
   const router = useRouter();
   const [isOpen, setIsOpen] = useState(true);
 
-  const handleLogout = () => {
-    // Clear user token disini
-    router.push('/login');
+  const handleLogout = async () => {
+    const result = await Swal.fire({
+      title: "Logout",
+      text: "Are you sure you want to logout?",
+      icon: "question",
+      showCancelButton: true,
+      confirmButtonText: "Yes, logout",
+      cancelButtonText: "Cancel",
+    });
+
+    if (result.isConfirmed) {
+      try {
+        await fetch('/api/logout', { method: 'POST' });
+        await Swal.fire({
+          icon: "success",
+          title: "Logged Out",
+          timer: 1500,
+          showConfirmButton: false,
+        });
+        router.push('/login');
+      } catch (error) {
+        await Swal.fire({
+          icon: "error",
+          title: "Logout Failed",
+          text: "An error occurred during logout",
+        });
+      }
+    }
   };
 
   const navItems = [

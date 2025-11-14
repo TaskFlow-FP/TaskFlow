@@ -4,22 +4,21 @@ import { useState } from "react";
 import Navbar from "../components/Navbar";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import Swal from "sweetalert2";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
-
   const [isLoading, setIsLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
 
   const router = useRouter()
+  
   const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     setIsLoading(true)
-    setError(null)
     
     try {
-      const resp = await fetch("http://localhost:3000/api/login", {
+      const resp = await fetch("/api/login", {
         method: 'POST',
         headers: {
           "Content-Type": "application/json"
@@ -30,16 +29,31 @@ export default function LoginPage() {
       const data = await resp.json()
 
       if (!resp.ok) {
-        throw new Error(data.message || "An error occurred during registration.");
+        await Swal.fire({
+          icon: 'error',
+          title: 'Login Failed',
+          text: data.message || data.error,
+        });
+        return;
       }
+
+      await Swal.fire({
+        icon: 'success',
+        title: 'Login Successful!',
+        timer: 1500,
+        showConfirmButton: false,
+      });
 
       router.push('/')
     } catch (error: any) {
-      setError(error.message)
-    } finally {
-      setIsLoading(false)
+      await Swal.fire({
+        icon: "error",
+        title: "Error",
+        text: error.message,
+      });
     }
-  }
+    setIsLoading(false);
+  };
 
   return(
     <div className="min-h-screen bg-gray-900 text-white">
@@ -49,31 +63,21 @@ export default function LoginPage() {
         <div className="w-full bg-gray-800 rounded-lg shadow-xl md:mt-0 sm:max-w-md xl:p-0">
           <div className="p-6 space-y-4 md:space-y-6 sm:p-8">
             <h1 className="text-xl font-bold leading-tight tracking-tight text-center md:text-2xl">
-              Create an Account
+              Login 
             </h1>
 
             <form className="space-y-4 md:space-y-6" onSubmit={handleLogin}>
-              {
-                error && (
-                  <div className="p-3 text-sm text-center text-red-300 bg-red-500 bg-opacity-20 rounded-lg">
-                    {error}
-                  </div>
-                )
-              }
-
               <div>
                 <label htmlFor="email" className="block mb-2 text-sm font-medium text-gray-300">
                   Email
                 </label>
                 <input
-                  type="email"
                   name="email"
                   id="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   className="w-full px-3 py-2 text-white bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                   placeholder="Enter your email"
-                  required
                 />
               </div>
 
@@ -89,13 +93,12 @@ export default function LoginPage() {
                   onChange={(e) => setPassword(e.target.value)}
                   className="w-full px-3 py-2 text-white bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                   placeholder="Enter your password"
-                  required
                 />
               </div>
 
               <p className="text-sm font-light text-center text-gray-400">
                 Don't have an account?{' '}
-                <Link href="/login" className="font-medium text-blue-500 hover:underline">
+                <Link href="/register" className="font-medium text-blue-500 hover:underline">
                   Register here
                 </Link>
               </p>

@@ -4,24 +4,22 @@ import { useState } from "react";
 import Navbar from "../components/Navbar";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import Swal from "sweetalert2";
 
 export default function RegisterPage() {
   const [email, setEmail] = useState("")
   const [fullName, setFullName] = useState("")
   const [password, setPassword] = useState("")
-
   const [isLoading, setIsLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
 
   const router = useRouter()
 
   const handleRegister = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     setIsLoading(true)
-    setError(null)
 
     try {
-      const resp = await fetch("http://localhost:3000/api/register", {
+      const resp = await fetch("/api/register", {
         method: 'POST',
         headers: {
           "Content-Type": "application/json"
@@ -32,16 +30,31 @@ export default function RegisterPage() {
       const data = await resp.json()
 
       if (!resp.ok) {
-        throw new Error(data.message || "An error occurred during registration.");
+        await Swal.fire({
+          icon: 'error',
+          title: 'Registration Failed',
+          text: data.message || data.error,
+        });
+        return;
       }
+
+      await Swal.fire({
+        icon: 'success',
+        title: 'Registration Successful!',
+        timer: 1500,
+        showConfirmButton: false,
+      });
 
       router.push('/login')
     } catch (error: any) {
-      setError(error.message)
-    } finally {
-      setIsLoading(false)
+      await Swal.fire({
+        icon: "error",
+        title: "Error",
+        text: error.message,
+      });
     }
-  }
+    setIsLoading(false);
+  };
 
   return (
     <div className="min-h-screen bg-gray-900 text-white">
@@ -55,27 +68,17 @@ export default function RegisterPage() {
             </h1>
 
             <form className="space-y-4 md:space-y-6" onSubmit={handleRegister}>
-              {
-                error && (
-                  <div className="p-3 text-sm text-center text-red-300 bg-red-500 bg-opacity-20 rounded-lg">
-                    {error}
-                  </div>
-                )
-              }
-
               <div>
                 <label htmlFor="email" className="block mb-2 text-sm font-medium text-gray-300">
                   Email
                 </label>
                 <input
-                  type="email"
                   name="email"
                   id="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   className="w-full px-3 py-2 text-white bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                   placeholder="Enter your email"
-                  required
                 />
               </div>
 
@@ -91,7 +94,6 @@ export default function RegisterPage() {
                   onChange={(e) => setFullName(e.target.value)}
                   className="w-full px-3 py-2 text-white bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                   placeholder="Enter your full name"
-                  required
                 />
               </div>
 
@@ -107,7 +109,6 @@ export default function RegisterPage() {
                   onChange={(e) => setPassword(e.target.value)}
                   className="w-full px-3 py-2 text-white bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                   placeholder="Enter your password"
-                  required
                 />
               </div>
 

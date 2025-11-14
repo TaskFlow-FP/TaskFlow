@@ -4,6 +4,7 @@ import User from "@/server/User";
 import bcrypt from "bcryptjs";
 import { cookies } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
+import { ZodError } from "zod";
 
 export async function POST(request: NextRequest) {
     try {
@@ -24,17 +25,21 @@ export async function POST(request: NextRequest) {
 
         cookieStore.set("access_token", token, {
             httpOnly: false, 
-            secure: process.env.NODE_ENV === 'production',
+            secure: false,
             maxAge: 60 * 60 * 24 * 7,
             path: '/',
             sameSite: 'lax'
         })
 
+        console.log('Token set:', token);
+        console.log('Cookie set successfully');
+
         return NextResponse.json({ message: 'Login successfully' })
     } catch (error: any) {
-        if (error.errors) {
-            return NextResponse.json({ message: error.errors[0].message }, { status: 400 });
+        if (error instanceof ZodError) {
+            return NextResponse.json({ message: error.issues[0].message }, { status: 400 });
         }
+        console.error('Login error:', error);
         return NextResponse.json({ message: 'Internal Server Error' }, { status: 500 });
     }
 }

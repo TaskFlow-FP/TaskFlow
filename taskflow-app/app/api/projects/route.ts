@@ -2,6 +2,7 @@ import Project from "@/server/Project";
 import { projectCreateSchema } from "@/server/schemas/projectSchema";
 import { ObjectId } from "mongodb";
 import { NextRequest, NextResponse } from "next/server";
+import { ZodError } from "zod";
 
 export async function POST(request: NextRequest) {
     try {
@@ -17,15 +18,20 @@ export async function POST(request: NextRequest) {
         const project = await Project.create(projectData);
         return NextResponse.json(project, { status: 201 });
     } catch (error: any) {
-        if (error.errors) {
-            return NextResponse.json({ message: error.errors[0].message }, { status: 400 });
+        if (error instanceof ZodError) {
+            return NextResponse.json({ error: error.issues[0].message }, { status: 400 });
         }
-        return NextResponse.json({ message: 'Internal Server Error' }, { status: 500 });
+        console.error('Project creation error:', error);
+        return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
     }
 }
 
 export async function GET(request: NextRequest) {
-    const projects = await Project.with("owner", { exclude: ["password", "_id"] }).get();
-
-    return NextResponse.json(projects);
+    try {
+        const projects = await Project.with("owner", { exclude: ["password", "_id"] }).get();
+        return NextResponse.json({ projects });
+    } catch (error) {
+        console.error('Project fetch error:', error);
+        return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    }
 }

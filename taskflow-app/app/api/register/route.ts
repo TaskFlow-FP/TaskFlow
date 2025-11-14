@@ -2,6 +2,7 @@ import User from "@/server/User";
 import { userRegisterSchema } from "@/server/schemas/userSchema";
 import { NextRequest, NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
+import { ZodError } from "zod";
 
 export async function POST(request: NextRequest) {
     try {
@@ -26,9 +27,10 @@ export async function POST(request: NextRequest) {
         
         return NextResponse.json({ message: 'Registration successful' }, { status: 201 });
     } catch (error: any) {
-        if (error.errors) {
-            return NextResponse.json({ message: error.errors[0].message }, { status: 400 });
+        if (error instanceof ZodError) {
+            return NextResponse.json({ message: error.issues[0].message }, { status: 400 });
         }
+        console.error('Register error:', error);
         return NextResponse.json({ message: 'Internal Server Error' }, { status: 500 });
     }
 }
