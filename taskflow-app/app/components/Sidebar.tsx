@@ -22,14 +22,20 @@ export default function Sidebar() {
 
     if (result.isConfirmed) {
       try {
-        await fetch('/api/logout', { method: 'POST' });
-        await Swal.fire({
-          icon: "success",
-          title: "Logged Out",
-          timer: 1500,
-          showConfirmButton: false,
-        });
-        router.push('/login');
+        const response = await fetch('/api/logout', { method: 'POST' });
+        
+        if (response.ok) {
+          await Swal.fire({
+            icon: "success",
+            title: "Logged Out",
+            timer: 1500,
+            showConfirmButton: false,
+          });
+          router.push('/login');
+          router.refresh();
+        } else {
+          throw new Error('Logout failed');
+        }
       } catch (error) {
         await Swal.fire({
           icon: "error",
