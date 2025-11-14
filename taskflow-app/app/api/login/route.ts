@@ -20,7 +20,7 @@ export async function POST(request: NextRequest) {
             )
         }
 
-        const token = signToken({ _id: user._id, name: user.full_name })
+        const token = signToken({ id: user._id.toString(), name: user.full_name })
         const cookieStore = await cookies()
 
         cookieStore.set("access_token", token, {
