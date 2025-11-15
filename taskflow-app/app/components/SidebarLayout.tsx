@@ -10,7 +10,7 @@ export default function SidebarLayout({ children }: SidebarLayoutProps) {
   return (
     <div className="flex h-screen">
       <Sidebar />
-      <main className="flex-1 overflow-auto bg-gray-100 p-8">
+      <main className="flex-1 overflow-auto bg-gray-900 p-8">
         {children}
       </main>
     </div>
