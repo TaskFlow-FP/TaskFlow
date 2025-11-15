@@ -2,7 +2,7 @@ import { NextRequest } from "next/server";
 import { verifyToken } from "./jwt";
 
 export function getCurrentUser(request: NextRequest) {
-    const token = request.cookies.get("token")?.value;
+    const token = request.cookies.get("access_token")?.value;
     if (!token) {
         throw new Error("Not authenticated");
     }
