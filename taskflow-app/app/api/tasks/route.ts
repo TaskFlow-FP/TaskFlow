@@ -39,10 +39,46 @@ export async function POST(req: NextRequest) {
   }
 }
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   try {
-    const tasks = await Task.get();
-    return NextResponse.json({ tasks }, { status: 200 });
+    const { searchParams } = new URL(req.url);
+    const page = parseInt(searchParams.get('page') || '1');
+    const limit = parseInt(searchParams.get('limit') || '8');
+    const status = searchParams.get('status');
+
+    let query = Task.query();
+    if (status && status !== 'all') {
+      query = query.where('status', status);
+    }
+    
+    const allTasks = await query.get();
+    const totalTasks = allTasks.length;
+    
+    const tasks = await query
+      .orderBy('created_at', 'desc')
+      .skip((page - 1) * limit)
+      .limit(limit)
+      .get();
+
+    console.log('=== TASKS API DEBUG ===');
+    console.log('Total tasks in DB:', totalTasks);
+    console.log('Current page:', page);
+    console.log('Limit per page:', limit);
+    console.log('Tasks returned:', tasks.length);
+    console.log('Sample task:', tasks[0]);
+    console.log('=======================');
+
+    return NextResponse.json({ 
+      tasks,
+      pagination: {
+        currentPage: page,
+        totalPages: Math.ceil(totalTasks / limit),
+        totalTasks,
+        limit,
+        hasNext: page < Math.ceil(totalTasks / limit),
+        hasPrev: page > 1
+      }
+    }, { status: 200 });
   } catch (error: any) {
     console.error("Fetch tasks error:", error);
     return NextResponse.json(
