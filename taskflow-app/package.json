@@ -19,6 +19,7 @@
     "next": "16.0.2",
     "react": "19.2.0",
     "react-dom": "19.2.0",
+    "resend": "^6.4.2",
     "sweetalert2": "^11.26.3"
   },
   "devDependencies": {
