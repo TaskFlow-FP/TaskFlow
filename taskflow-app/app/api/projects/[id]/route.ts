@@ -72,3 +72,35 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
         return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
     }
 }
+
+export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+    try {
+        const currentUser = getCurrentUser(request);
+        const { id: projectId } = await params;
+
+        const membership = await Member.where('projectId', new ObjectId(projectId)).where('userId', new ObjectId(currentUser.id)).where('invitation_status', 'accepted').first();
+        
+        if (!membership) {
+            return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+        }
+
+        const [project, tasks, members] = await Promise.all([
+            Project.where('_id', new ObjectId(projectId)).with("owner", { exclude: ['password'] }).first(),
+            Task.where('projectId', new ObjectId(projectId)).get(),
+            Member.where('projectId', new ObjectId(projectId)).with('user', { exclude: ['password'] }).get()
+        ]);
+
+        if (!project) {
+            return NextResponse.json({ error: "Project not found" }, { status: 404 });
+        }
+
+        return NextResponse.json({ project, tasks, members });
+
+    } catch (error: any) {
+        if (error.message.includes("Not authenticated")) {
+            return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+        }
+        console.error(`Project fetch detail error:`, error);
+        return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    }
+}
