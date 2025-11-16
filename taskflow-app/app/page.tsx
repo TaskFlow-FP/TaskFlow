@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef, Fragment } from "react";
 import SidebarLayout from "./components/SidebarLayout";
 import Swal from "sweetalert2";
 
@@ -51,14 +51,7 @@ export default function HomePage() {
   const [totalPages, setTotalPages] = useState(1);
   const [totalTasks, setTotalTasks] = useState(0);
   const [stats, setStats] = useState<DashboardStats | null>(null);
-
-  useEffect(() => {
-    fetchStats();
-  }, []);
-
-  useEffect(() => {
-    fetchTasks();
-  }, [currentPage, filter]);
+  const scrollPosRef = useRef<number>(0);
 
   const fetchStats = async () => {
     try {
@@ -90,7 +83,58 @@ export default function HomePage() {
     } catch (error) {
     }
     setLoading(false);
+    
+    if (scrollPosRef.current > 0) {
+      setTimeout(() => {
+        window.scrollTo({ top: scrollPosRef.current, behavior: 'instant' });
+        scrollPosRef.current = 0;
+      }, 0);
+    }
   };
+
+  useEffect(() => {
+    fetchStats();
+  }, []);
+
+  useEffect(() => {
+    fetchTasks();
+  }, [currentPage, filter]);
+
+  useEffect(() => {
+    const eventSource = new EventSource('/api/tasks/stream');
+
+    eventSource.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        if (data.type === 'task_created' || data.type === 'task_updated' || data.type === 'task_deleted') {
+          window.dispatchEvent(new CustomEvent('refreshTasks'));
+        }
+      } catch (error) {
+      }
+    };
+
+    eventSource.onerror = () => {
+      eventSource.close();
+    };
+
+    return () => {
+      eventSource.close();
+    };
+  }, []);
+
+  useEffect(() => {
+    const handleRefresh = () => {
+      scrollPosRef.current = window.scrollY;
+      fetchTasks();
+      fetchStats();
+    };
+
+    window.addEventListener('refreshTasks', handleRefresh);
+
+    return () => {
+      window.removeEventListener('refreshTasks', handleRefresh);
+    };
+  }, [currentPage, filter]);
 
   const handleDelete = async (taskId: string, taskTitle: string) => {
     const result = await Swal.fire({
@@ -116,7 +160,6 @@ export default function HomePage() {
             timer: 1500,
             showConfirmButton: false,
           });
-          fetchTasks();
         } else {
           const data = await res.json();
           await Swal.fire({
@@ -132,6 +175,35 @@ export default function HomePage() {
           text: "Failed to delete task",
         });
       }
+    }
+  };
+
+  const handleStatusChange = async (taskId: string, newStatus: string) => {
+    try {
+      const res = await fetch(`/api/tasks/${taskId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: newStatus }),
+      });
+
+      if (!res.ok) {
+        const data = await res.json();
+        await Swal.fire({
+          icon: "error",
+          title: "Update Failed",
+          text: data.error,
+          timer: 2000,
+          showConfirmButton: false,
+        });
+      }
+    } catch (error) {
+      await Swal.fire({
+        icon: "error",
+        title: "Error",
+        text: "Failed to update task",
+        timer: 2000,
+        showConfirmButton: false,
+      });
     }
   };
 
@@ -404,23 +476,23 @@ export default function HomePage() {
             </div>
           </div>
 
-          {loading ? (
-            <div className="p-8 text-center text-gray-400">
-              <div className="animate-spin h-8 w-8 border-4 border-blue-600 border-t-transparent rounded-full mx-auto"></div>
-              <p className="mt-4">Loading tasks...</p>
-            </div>
-          ) : tasks.length === 0 ? (
-            <div className="p-8 text-center text-gray-400">
-              <p className="text-lg">No tasks found</p>
-              <p className="text-sm mt-2">
-                {filter !== 'all'
-                  ? 'Try adjusting your filter' 
-                  : 'Create your first task to get started!'}
-              </p>
-            </div>
-          ) : (
-            <div className="divide-y divide-gray-700">
-              {tasks.map((task) => (
+          <div style={{ minHeight: '600px' }}>
+            {loading ? (
+              <div className="p-8 text-center text-gray-400">
+                <div className="animate-spin h-8 w-8 border-4 border-blue-600 border-t-transparent rounded-full mx-auto"></div>
+                <p className="mt-4">Loading tasks...</p>
+              </div>
+            ) : tasks.length === 0 ? (
+              <div className="p-8 text-center text-gray-400">
+                <p className="text-lg">No tasks found</p>
+                <p className="text-sm mt-2">
+                  {filter !== 'all'
+                    ? 'Try adjusting your filter' 
+                    : 'Create your first task to get started!'}
+                </p>
+              </div>
+            ) : (
+              <div className="divide-y divide-gray-700">{tasks.map((task) => (
                 <div
                   key={task._id}
                   className="p-6 hover:bg-gray-700/50 transition-colors"
@@ -446,14 +518,19 @@ export default function HomePage() {
                         </p>
                       )}
 
-                      <div className="flex items-center gap-4 text-sm">
-                        <span
-                          className={`px-3 py-1 rounded-lg border ${getStatusColor(
+                      <div className="flex items-center gap-4 text-sm flex-wrap">
+                        <select
+                          value={task.status}
+                          onChange={(e) => handleStatusChange(task._id, e.target.value)}
+                          className={`px-3 py-1 rounded-lg border cursor-pointer bg-gray-800 ${getStatusColor(
                             task.status
                           )}`}
                         >
-                          {task.status.replace("_", " ").toUpperCase()}
-                        </span>
+                          <option value="backlog">BACKLOG</option>
+                          <option value="todo">TO DO</option>
+                          <option value="in_progress">IN PROGRESS</option>
+                          <option value="done">DONE</option>
+                        </select>
 
                         {task.due_date && (
                           <span className="text-gray-400 flex items-center gap-1">
@@ -475,9 +552,6 @@ export default function HomePage() {
                     </div>
 
                     <div className="flex gap-2">
-                      <button className="p-2 rounded-lg bg-gray-700 hover:bg-gray-600 text-white transition">
-                        ✏️
-                      </button>
                       <button
                         onClick={() => handleDelete(task._id, task.title)}
                         className="p-2 rounded-lg bg-red-900/30 hover:bg-red-900/50 text-red-400 transition"
@@ -505,18 +579,16 @@ export default function HomePage() {
                 <div className="flex gap-2">
                   {Array.from({ length: totalPages }, (_, i) => i + 1)
                     .filter(page => {
-                      // Show first, last, current, and adjacent pages
                       return page === 1 || 
                              page === totalPages || 
                              Math.abs(page - currentPage) <= 1;
                     })
                     .map((page, idx, arr) => (
-                      <>
+                      <Fragment key={page}>
                         {idx > 0 && arr[idx - 1] !== page - 1 && (
-                          <span key={`ellipsis-${page}`} className="px-2 py-2 text-gray-500">...</span>
+                          <span className="px-2 py-2 text-gray-500">...</span>
                         )}
                         <button
-                          key={page}
                           onClick={() => setCurrentPage(page)}
                           className={`px-4 py-2 rounded-lg font-medium transition ${
                             currentPage === page
@@ -526,7 +598,7 @@ export default function HomePage() {
                         >
                           {page}
                         </button>
-                      </>
+                      </Fragment>
                     ))}
                 </div>
 
@@ -540,6 +612,7 @@ export default function HomePage() {
               </div>
             </div>
           )}
+          </div>
         </div>
       </div>
     </SidebarLayout>
