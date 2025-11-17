@@ -360,10 +360,9 @@ export default function ProjectClientPage({ initialData }: { initialData: Projec
               {members.map(member => (
                 <li key={member._id} className="py-3 flex justify-between items-center">
                   <div>
-                    <p className="text-white font-medium">{member.user.full_name}</p>
-                    <p className="text-gray-400 text-sm">{member.user.email}</p>
+                    <p className="text-white font-medium">{member.full_name}</p>
+                    <p className="text-gray-400 text-sm">{member.email}</p>
                   </div>
-                  <span className="text-xs font-bold uppercase bg-gray-700 text-gray-300 px-2 py-1 rounded-full">{member.role}</span>
                 </li>
               ))}
             </ul>
