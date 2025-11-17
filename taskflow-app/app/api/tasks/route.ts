@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import Task from "@/server/Task";
 import { taskCreateSchema } from "@/server/schemas/taskSchema";
 import { ObjectId } from "mongodb";
+import TaskNotifier from "@/server/TaskNotifier";
 
 export async function POST(req: NextRequest) {
   try {
@@ -20,12 +21,14 @@ export async function POST(req: NextRequest) {
 
     const task = await Task.create(taskData);
 
+    const notifier = TaskNotifier.getInstance();
+    notifier.notifyTaskCreated(task);
+
     return NextResponse.json(
       { message: "Task created successfully", task },
       { status: 201 }
     );
   } catch (error: any) {
-    console.error("Create task error:", error);
     if (error.errors) {
       return NextResponse.json(
         { error: error.errors[0]?.message || "Validation failed" },
@@ -46,27 +49,22 @@ export async function GET(req: NextRequest) {
     const limit = parseInt(searchParams.get('limit') || '8');
     const status = searchParams.get('status');
 
-    let query = Task.query();
+    let countQuery = Task.query();
+    let dataQuery = Task.query();
+    
     if (status && status !== 'all') {
-      query = query.where('status', status);
+      countQuery = countQuery.where('status', status);
+      dataQuery = dataQuery.where('status', status);
     }
     
-    const allTasks = await query.get();
+    const allTasks = await countQuery.get();
     const totalTasks = allTasks.length;
     
-    const tasks = await query
+    const tasks = await dataQuery
       .orderBy('created_at', 'desc')
       .skip((page - 1) * limit)
       .limit(limit)
       .get();
-
-    console.log('=== TASKS API DEBUG ===');
-    console.log('Total tasks in DB:', totalTasks);
-    console.log('Current page:', page);
-    console.log('Limit per page:', limit);
-    console.log('Tasks returned:', tasks.length);
-    console.log('Sample task:', tasks[0]);
-    console.log('=======================');
 
     return NextResponse.json({ 
       tasks,
@@ -80,7 +78,6 @@ export async function GET(req: NextRequest) {
       }
     }, { status: 200 });
   } catch (error: any) {
-    console.error("Fetch tasks error:", error);
     return NextResponse.json(
       { error: "Failed to fetch tasks", details: error.message },
       { status: 500 }
