@@ -4,7 +4,7 @@ import { useEffect, useState, useRef, Fragment } from "react";
 import SidebarLayout from "./components/SidebarLayout";
 import Swal from "sweetalert2";
 
-interface Task {
+export interface Task {
   _id: string;
   projectId: string;
   title: string;

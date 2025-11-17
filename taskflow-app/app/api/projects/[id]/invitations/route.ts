@@ -22,7 +22,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
 
         const invitee = await User.where('email', inviteeEmail).first()
         if (!invitee) {
-            return NextResponse.json({ error: "This user is already a member of the project." }, { status: 409 });
+            return NextResponse.json({ error: "User with this email not found. Please check the email address." }, { status: 404 });
         }
 
         const existingMembership = await Member.where('projectId', new ObjectId(projectId)).where('userId', new ObjectId(invitee._id)).first();
@@ -39,10 +39,14 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
 
         const invitationToken = signToken({ memberId: newMember._id.toString() })
 
-        const acceptUrl = `http://localhost:3000/invitations/accept?token=${invitationToken}`
+        const acceptUrl = `http://localhost:3000/invitation/accept?token=${invitationToken}`
 
-        await resend.emails.send({
-            from: 'TaskFlow <invitations@akbarbudi.xyz>',
+        console.log('📧 Attempting to send email to:', invitee.email);
+        console.log('📧 Invitation URL:', acceptUrl);
+        console.log('📧 RESEND_API_KEY exists:', !!process.env.RESEND_API_KEY);
+
+        const emailResult = await resend.emails.send({
+            from: 'TaskFlow <onboarding@resend.dev>',  // Email default Resend untuk testing
             to: invitee.email,
             subject: `You have been invited to collaborate on a project!`,
             html: `
@@ -53,6 +57,15 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
                 <p>This link will expire in 3 days.</p>
             `
         })
+
+        console.log('📧 Email send result:', emailResult);
+
+        if (emailResult.error) {
+            console.error('📧 Email send error:', emailResult.error);
+            // Rollback: hapus member yang baru dibuat karena email gagal dikirim
+            await Member.where('_id', new ObjectId(newMember._id)).delete();
+            return NextResponse.json({ error: 'Failed to send invitation email. Please try again.' }, { status: 500 });
+        }
 
         return NextResponse.json({ message: 'Invitation sent successfully.' })
     } catch (error) {
