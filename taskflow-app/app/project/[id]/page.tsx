@@ -6,27 +6,40 @@ export interface IUser {
     _id: string
     email: string
     full_name: string
+    createdAt?: string
+    updatedAt?: string
 }
 
 export interface IMember {
     _id: string
-    userId: string
-    projectId: string
-    role: string
-    user: IUser
+    email: string
+    full_name: string
+    createdAt?: string
+    updatedAt?: string
 }
 
 export interface ITask {
     _id: string
+    projectId: string
     title: string
+    description: string
     status: string
     priority: string
+    due_date: string | null
+    google_calendar_event_id: string | null
+    createdAt: string
+    updatedAt: string
 }
 
 export interface IProject {
     _id: string
     name: string
     description: string
+    ownerId: string
+    createdAt: string
+    updatedAt: string
+    tasks: ITask[]
+    members: IMember[]
     owner: IUser
 }
 
@@ -54,7 +67,14 @@ async function getProjectDetail(projectId: string): Promise<ProjectDetails | nul
             throw new Error("Failed to fetch project details");
         }
 
-        return resp.json();
+        const projectData: IProject = await resp.json();
+        
+        // Transform data untuk match dengan interface ProjectDetails
+        return {
+            project: projectData,
+            tasks: projectData.tasks || [],
+            members: projectData.members || []
+        };
     } catch (error) {
         console.error("getProjectDetails Error:", error);
         return null;

@@ -99,17 +99,13 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
             return NextResponse.json({ error: "Forbidden" }, { status: 403 });
         }
 
-        const [project, tasks, members] = await Promise.all([
-            Project.where('_id', new ObjectId(projectId)).with("owner", { exclude: ['password'] }).first(),
-            Task.where('projectId', new ObjectId(projectId)).get(),
-            Member.where('projectId', new ObjectId(projectId)).with('user', { exclude: ['password'] }).get()
-        ]);
+        const project = await Project.where('_id', projectId).with('tasks').with('members').with('owner', { exclude: ['password'] }).first()
 
         if (!project) {
             return NextResponse.json({ error: "Project not found" }, { status: 404 });
         }
 
-        return NextResponse.json({ project, tasks, members });
+        return NextResponse.json(project);
 
     } catch (error: any) {
         if (error.message.includes("Not authenticated")) {

@@ -11,7 +11,11 @@ interface ProjectType {
     createdAt: string;
     updatedAt: string;
     owner: {
+        _id: string;
+        email: string;
         full_name: string;
+        createdAt: string;
+        updatedAt: string;
     };
 }
 
