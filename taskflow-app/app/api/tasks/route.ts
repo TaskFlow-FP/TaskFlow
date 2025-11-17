@@ -1,16 +1,35 @@
 import { NextRequest, NextResponse } from "next/server";
 import Task from "@/server/Task";
+import Project from "@/server/Project";
+import Member from "@/server/Member";
 import { taskCreateSchema } from "@/server/schemas/taskSchema";
 import { ObjectId } from "mongodb";
 import TaskNotifier from "@/server/TaskNotifier";
+import { getCurrentUser } from "@/helpers/auth";
 
 export async function POST(req: NextRequest) {
   try {
+    const currentUser = getCurrentUser(req);
     const body = await req.json();
     const validated = taskCreateSchema.parse(body);
 
+    // Check if user is member of the project
+    const projectId = new ObjectId(validated.projectId);
+    const membership = await Member.query()
+      .where('userId', new ObjectId(currentUser.id))
+      .where('projectId', projectId)
+      .where('invitation_status', 'accepted')
+      .first();
+
+    if (!membership) {
+      return NextResponse.json(
+        { error: "You are not a member of this project" },
+        { status: 403 }
+      );
+    }
+
     const taskData: any = {
-      projectId: new ObjectId(validated.projectId),
+      projectId: projectId,
       title: validated.title,
       description: validated.description,
       status: validated.status || "todo",
@@ -29,6 +48,9 @@ export async function POST(req: NextRequest) {
       { status: 201 }
     );
   } catch (error: any) {
+    if (error.message === "Not authenticated" || error.message === "Invalid token") {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
     if (error.errors) {
       return NextResponse.json(
         { error: error.errors[0]?.message || "Validation failed" },
@@ -44,13 +66,38 @@ export async function POST(req: NextRequest) {
 
 export async function GET(req: NextRequest) {
   try {
+    const currentUser = getCurrentUser(req);
     const { searchParams } = new URL(req.url);
     const page = parseInt(searchParams.get('page') || '1');
     const limit = parseInt(searchParams.get('limit') || '8');
     const status = searchParams.get('status');
 
-    let countQuery = Task.query();
-    let dataQuery = Task.query();
+    // Get all projects where user is a member
+    const memberships = await Member.query()
+      .where('userId', new ObjectId(currentUser.id))
+      .where('invitation_status', 'accepted')
+      .get();
+
+    const projectIds = memberships.map(m => m.projectId);
+
+    // If user is not member of any project, return empty
+    if (projectIds.length === 0) {
+      return NextResponse.json({ 
+        tasks: [],
+        pagination: {
+          currentPage: 1,
+          totalPages: 0,
+          totalTasks: 0,
+          limit,
+          hasNext: false,
+          hasPrev: false
+        }
+      }, { status: 200 });
+    }
+
+    // Filter tasks by projects user is member of
+    let countQuery = Task.query().whereIn('projectId', projectIds);
+    let dataQuery = Task.query().whereIn('projectId', projectIds);
     
     if (status && status !== 'all') {
       countQuery = countQuery.where('status', status);
@@ -61,7 +108,7 @@ export async function GET(req: NextRequest) {
     const totalTasks = allTasks.length;
     
     const tasks = await dataQuery
-      .orderBy('created_at', 'desc')
+      .orderBy('createdAt', 'desc')
       .skip((page - 1) * limit)
       .limit(limit)
       .get();
@@ -78,6 +125,9 @@ export async function GET(req: NextRequest) {
       }
     }, { status: 200 });
   } catch (error: any) {
+    if (error.message === "Not authenticated" || error.message === "Invalid token") {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
     return NextResponse.json(
       { error: "Failed to fetch tasks", details: error.message },
       { status: 500 }

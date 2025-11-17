@@ -1,7 +1,9 @@
 type EventData = {
-  type: 'task_created' | 'task_updated' | 'task_deleted';
+  type: 'task_created' | 'task_updated' | 'task_deleted' | 'comment_created' | 'comment_updated' | 'comment_deleted';
   taskId?: string;
   task?: any;
+  commentId?: string;
+  comment?: any;
   timestamp: string;
 };
 
@@ -57,6 +59,33 @@ class TaskNotifier {
   notifyTaskDeleted(taskId: string) {
     this.broadcast({
       type: 'task_deleted',
+      taskId,
+      timestamp: new Date().toISOString()
+    });
+  }
+
+  notifyCommentCreated(taskId: string, comment: any) {
+    this.broadcast({
+      type: 'comment_created',
+      taskId,
+      comment,
+      timestamp: new Date().toISOString()
+    });
+  }
+
+  notifyCommentUpdated(commentId: string, comment: any) {
+    this.broadcast({
+      type: 'comment_updated',
+      commentId,
+      comment,
+      timestamp: new Date().toISOString()
+    });
+  }
+
+  notifyCommentDeleted(commentId: string, taskId: string) {
+    this.broadcast({
+      type: 'comment_deleted',
+      commentId,
       taskId,
       timestamp: new Date().toISOString()
     });

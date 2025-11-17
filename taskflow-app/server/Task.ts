@@ -2,6 +2,7 @@ import { ObjectId } from "mongodb";
 import { Model, IMongoloquentSchema, IMongoloquentTimestamps } from "mongoloquent";
 import User from "./User";
 import Project from "./Project";
+import Comment from "./Comment";
 
 export type TaskStatus = 'backlog' | 'todo' | 'in_progress' | 'done';
 export type TaskPriority = 'low' | 'medium' | 'high' | 'urgent';
@@ -28,5 +29,9 @@ export default class Task extends Model<ITask> {
 
   public assignedUsers() {
     return this.belongsToMany(User, "task_users", 'taskId', 'userId');
+  }
+
+  public comments() {
+    return this.hasMany(Comment, "taskId", "_id");
   }
 }

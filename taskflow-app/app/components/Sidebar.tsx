@@ -48,7 +48,7 @@ export default function Sidebar() {
 
   const navItems = [
     { name: "Dashboard", path: "/" },
-    { name: "Group", path: "/group" },
+    { name: "Group", path: "/project" },
     { name: "Create Task", path: "/create-task" },
   ];
 

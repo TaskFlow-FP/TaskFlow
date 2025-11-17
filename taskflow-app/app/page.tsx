@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useRef, Fragment } from "react";
+import { useRouter } from "next/navigation";
 import SidebarLayout from "./components/SidebarLayout";
 import Swal from "sweetalert2";
 
@@ -44,6 +45,7 @@ interface DashboardStats {
 }
 
 export default function HomePage() {
+  const router = useRouter();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<string>("all");
@@ -106,6 +108,10 @@ export default function HomePage() {
     eventSource.onmessage = (event) => {
       try {
         const data = JSON.parse(event.data);
+        
+        // Dispatch SSE events for components to listen
+        window.dispatchEvent(new CustomEvent('sse-event', { detail: data }));
+        
         if (data.type === 'task_created' || data.type === 'task_updated' || data.type === 'task_deleted') {
           window.dispatchEvent(new CustomEvent('refreshTasks'));
         }
@@ -552,6 +558,13 @@ export default function HomePage() {
                     </div>
 
                     <div className="flex gap-2">
+                      <button
+                        onClick={() => router.push(`/task/${task._id}`)}
+                        className="p-2 rounded-lg bg-blue-900/30 hover:bg-blue-900/50 text-blue-400 transition"
+                        title="View details and comments"
+                      >
+                        💬
+                      </button>
                       <button
                         onClick={() => handleDelete(task._id, task.title)}
                         className="p-2 rounded-lg bg-red-900/30 hover:bg-red-900/50 text-red-400 transition"
