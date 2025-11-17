@@ -46,7 +46,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
         console.log('📧 RESEND_API_KEY exists:', !!process.env.RESEND_API_KEY);
 
         const emailResult = await resend.emails.send({
-            from: 'TaskFlow <onboarding@resend.dev>',  // Email default Resend untuk testing
+            from: 'TaskFlow <invitations@akbarbudi.xyz>',
             to: invitee.email,
             subject: `You have been invited to collaborate on a project!`,
             html: `
