@@ -5,6 +5,7 @@ import { ProjectDetails } from './page';
 import TaskBoard from "./TaskBoard";
 import { useRouter } from "next/navigation";
 import Swal from "sweetalert2";
+import { email } from "zod";
 
 export default function ProjectClientPage({ initialData }: { initialData: ProjectDetails }) {
   const [project, setProject] = useState(initialData.project);
@@ -12,10 +13,12 @@ export default function ProjectClientPage({ initialData }: { initialData: Projec
   const [members, setMembers] = useState(initialData.members);
   const [activeTab, setActiveTab] = useState('tasks');
   const [isEditModalOpen, setIsEditModalOpen] = useState(false)
+  const [isInviteModalOpen, setIsInviteModalOpen] = useState(false)
   const [editFormData, setEditFormData] = useState({
     name: '',
     description: ''
   })
+  const [inviteEmail, setInviteEmail] = useState("")
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   const router = useRouter()
@@ -122,6 +125,58 @@ export default function ProjectClientPage({ initialData }: { initialData: Projec
     }
   }
 
+  const handleOpenInviteModal = () => {
+    setInviteEmail('')
+    setIsInviteModalOpen(true)
+  }
+
+  const handleCloseInviteModal = () => {
+    setIsInviteModalOpen(false)
+    setInviteEmail('')
+  }
+
+  const handleInviteSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setIsSubmitting(true)
+
+    try {
+      const resp = await fetch(`http://localhost:3000/api/projects/${project._id}/invitations`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ email: inviteEmail })
+      })
+
+      const data = await resp.json()
+
+      if (resp.ok) {
+        handleCloseInviteModal()
+        await Swal.fire({
+          icon: "success",
+          title: "Invitation Sent!",
+          text: `An invitation has been sent to ${inviteEmail}`,
+          timer: 2000,
+          showConfirmButton: false,
+        });
+      } else {
+        await Swal.fire({
+          icon: "error",
+          title: "Invitation Failed",
+          text: data.error || "Failed to send invitation",
+        });
+      }
+    } catch (error) {
+      await Swal.fire({
+        icon: "error",
+        title: "Error",
+        text: "An error occurred while sending the invitation",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
+
   return (
     <div className="px-6 py-8">
       <div className="mb-8">
@@ -144,7 +199,12 @@ export default function ProjectClientPage({ initialData }: { initialData: Projec
         >
           Delete Project
         </button>
-        <button className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg transition">Invite Member</button>
+        <button 
+          onClick={handleOpenInviteModal}
+          className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg transition"
+        >
+          Invite Member
+        </button>
       </div>
 
       {isEditModalOpen && (
@@ -191,6 +251,52 @@ export default function ProjectClientPage({ initialData }: { initialData: Projec
                 <button
                   type="button"
                   onClick={handleCloseEditModal}
+                  disabled={isSubmitting}
+                  className="flex-1 bg-gray-700 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded-lg transition disabled:opacity-50"
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {isInviteModalOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-gray-800 rounded-xl p-6 w-full max-w-md border border-gray-700">
+            <h2 className="text-2xl font-bold text-white mb-6">Invite Member</h2>
+            
+            <form onSubmit={handleInviteSubmit}>
+              <div className="mb-6">
+                <label htmlFor="email" className="block text-sm font-medium text-gray-300 mb-2">
+                  Email Address
+                </label>
+                <input
+                  type="email"
+                  id="email"
+                  value={inviteEmail}
+                  onChange={(e) => setInviteEmail(e.target.value)}
+                  placeholder="Enter user's email"
+                  className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  required
+                />
+                <p className="mt-2 text-sm text-gray-400">
+                  An invitation email will be sent to this address
+                </p>
+              </div>
+
+              <div className="flex gap-3">
+                <button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg transition disabled:opacity-50"
+                >
+                  {isSubmitting ? "Sending..." : "Send Invitation"}
+                </button>
+                <button
+                  type="button"
+                  onClick={handleCloseInviteModal}
                   disabled={isSubmitting}
                   className="flex-1 bg-gray-700 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded-lg transition disabled:opacity-50"
                 >
