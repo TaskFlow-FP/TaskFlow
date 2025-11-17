@@ -2,13 +2,13 @@ import { cookies } from "next/headers";
 import SidebarLayout from "@/app/components/SidebarLayout"
 import ProjectClientPage from "./ProjectClientPage"
 
-interface IUser {
+export interface IUser {
     _id: string
     email: string
     full_name: string
 }
 
-interface IMember {
+export interface IMember {
     _id: string
     userId: string
     projectId: string
@@ -16,14 +16,14 @@ interface IMember {
     user: IUser
 }
 
-interface ITask {
+export interface ITask {
     _id: string
     title: string
     status: string
     priority: string
 }
 
-interface IProject {
+export interface IProject {
     _id: string
     name: string
     description: string
@@ -65,6 +65,8 @@ export default async function ProjectDetailPage({ params }: { params: Promise<{ 
     const { id } = await params
     const data = await getProjectDetail(id)
     
+    console.log(data, "<<< data")
+
     if (!data) {
         return (
             <SidebarLayout>
