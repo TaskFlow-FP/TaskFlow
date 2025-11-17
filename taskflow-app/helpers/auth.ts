@@ -8,7 +8,7 @@ export function getCurrentUser(request: NextRequest) {
     }
     try {
         const decoded = verifyToken(token);
-        return decoded as { id: string; email: string; fullName: string }
+        return decoded as { id: string; email: string; name: string }
     } catch (error) {
         throw new Error("Invalid token")
     }

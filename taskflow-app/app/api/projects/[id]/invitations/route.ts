@@ -42,12 +42,12 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
         const acceptUrl = `http://localhost:3000/invitations/accept?token=${invitationToken}`
 
         await resend.emails.send({
-            from: 'TaskFlow <onboarding@resend.dev>',
+            from: 'TaskFlow <invitations@akbarbudi.xyz>',
             to: invitee.email,
             subject: `You have been invited to collaborate on a project!`,
             html: `
                 <h1>You're Invited!</h1>
-                <p>${currentUser.fullName} has invited you to collaborate on a project.</p>
+                <p>${currentUser.name} has invited you to collaborate on a project.</p>
                 <p>Click the link below to accept the invitation:</p>
                 <a href="${acceptUrl}" style="background-color: #007bff; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">Accept Invitation</a>
                 <p>This link will expire in 3 days.</p>
