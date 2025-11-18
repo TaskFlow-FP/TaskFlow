@@ -178,33 +178,91 @@ export default function ProjectClientPage({ initialData }: { initialData: Projec
   }
 
   return (
-    <div className="px-6 py-8">
-      <div className="mb-8">
-        <h1 className="text-4xl font-bold text-white mb-2">{project.name}</h1>
-        <p className="text-gray-400 max-w-3xl">{project.description || "No description."}</p>
-        <div className="text-sm text-gray-500 mt-2">
+    <div className="min-h-screen bg-gray-50">
+      <header className="bg-white border-b border-gray-200 px-8 py-6">
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center space-x-2">
+            <div className="w-10 h-10 bg-gradient-to-br from-indigo-600 to-purple-600 rounded-lg flex items-center justify-center">
+              <span className="text-white font-bold">{project.name.charAt(0).toUpperCase()}</span>
+            </div>
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900">{project.name}</h1>
+            </div>
+          </div>
+        </div>
+        
+        <p className="text-sm text-gray-600 mb-4">{project.description || "No description."}</p>
+        <div className="text-sm text-gray-500">
           Owned by: {project.owner.full_name}
         </div>
-      </div>
-      <div className="flex gap-4 mb-8">
-        <button 
-          onClick={handleOpenEditModal}
-          className="bg-gray-700 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded-lg transition"
-        >
-          Edit Project
-        </button>
-        <button 
-          onClick={handleDelete}
-          className="bg-red-900/50 hover:bg-red-900/70 text-red-300 font-bold py-2 px-4 rounded-lg transition"
-        >
-          Delete Project
-        </button>
-        <button 
-          onClick={handleOpenInviteModal}
-          className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg transition"
-        >
-          Invite Member
-        </button>
+        
+        <div className="flex items-center space-x-8 mt-6 border-t border-gray-200 pt-4">
+          <button
+            onClick={() => setActiveTab('tasks')}
+            className={`px-4 py-2 text-sm font-medium ${
+              activeTab === 'tasks'
+                ? 'text-gray-900 border-b-2 border-indigo-600'
+                : 'text-gray-600 hover:text-gray-900'
+            }`}
+          >
+            Kanban
+          </button>
+          <button
+            onClick={() => setActiveTab('members')}
+            className={`px-4 py-2 text-sm font-medium ${
+              activeTab === 'members'
+                ? 'text-gray-900 border-b-2 border-indigo-600'
+                : 'text-gray-600 hover:text-gray-900'
+            }`}
+          >
+            Members ({members.length})
+          </button>
+          <div className="ml-auto flex items-center space-x-4">
+            <button 
+              onClick={handleOpenEditModal}
+              className="px-4 py-2 text-sm font-medium text-gray-700 hover:text-gray-900"
+            >
+              Edit
+            </button>
+            <button 
+              onClick={handleDelete}
+              className="px-4 py-2 text-sm font-medium text-red-600 hover:text-red-700"
+            >
+              Delete
+            </button>
+            <button 
+              onClick={handleOpenInviteModal}
+              className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 text-sm font-medium"
+            >
+              + Invite
+            </button>
+          </div>
+        </div>
+      </header>
+      
+      <main className="p-8">
+        {activeTab === 'tasks' && (
+          <TaskBoard tasks={tasks} />
+        )}
+        {activeTab === 'members' && (
+          <div className="bg-white rounded-lg p-6 shadow-sm">
+            <h2 className="text-xl font-bold text-gray-900 mb-4">Project Members</h2>
+            <ul className="divide-y divide-gray-200">
+              {members.map(member => (
+                <li key={member._id} className="py-3 flex justify-between items-center">
+                  <div>
+                    <p className="text-gray-900 font-medium">{member.full_name}</p>
+                    <p className="text-gray-600 text-sm">{member.email}</p>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+      </main>
+      
+      {/* Modals remain the same but need to be moved after main */}
+      <div className="hidden">
       </div>
 
       {isEditModalOpen && (
@@ -308,67 +366,7 @@ export default function ProjectClientPage({ initialData }: { initialData: Projec
         </div>
       )}
 
-      <div className="border-b border-gray-700 mb-8">
-        <nav className="flex gap-6 -mb-px">
-          <button
-            onClick={() => setActiveTab('tasks')}
-            className={`py-4 px-1 border-b-2 font-medium text-sm transition ${
-              activeTab === 'tasks'
-                ? 'border-blue-500 text-blue-500'
-                : 'border-transparent text-gray-400 hover:text-white hover:border-gray-300'
-            }`}
-          >
-            Tasks ({tasks.length})
-          </button>
-          <button
-            onClick={() => setActiveTab('chat')}
-            className={`py-4 px-1 border-b-2 font-medium text-sm transition ${
-              activeTab === 'chat'
-                ? 'border-blue-500 text-blue-500'
-                : 'border-transparent text-gray-400 hover:text-white hover:border-gray-300'
-            }`}
-          >
-            Chat
-          </button>
-          <button
-            onClick={() => setActiveTab('members')}
-            className={`py-4 px-1 border-b-2 font-medium text-sm transition ${
-              activeTab === 'members'
-                ? 'border-blue-500 text-blue-500'
-                : 'border-transparent text-gray-400 hover:text-white hover:border-gray-300'
-            }`}
-          >
-            Members ({members.length})
-          </button>
-        </nav>
-      </div>
 
-      <div>
-        {activeTab === 'tasks' && (
-          <TaskBoard tasks={tasks} />
-        )}
-        {activeTab === 'chat' && (
-          <div>
-            <h2 className="text-xl font-bold text-white mb-4">Project Chat</h2>
-            <p className="text-gray-400">Placeholder for ChatBox component.</p>
-          </div>
-        )}
-        {activeTab === 'members' && (
-          <div className="bg-gray-800 rounded-xl p-6 border border-gray-700">
-            <h2 className="text-xl font-bold text-white mb-4">Project Members</h2>
-            <ul className="divide-y divide-gray-700">
-              {members.map(member => (
-                <li key={member._id} className="py-3 flex justify-between items-center">
-                  <div>
-                    <p className="text-white font-medium">{member.full_name}</p>
-                    <p className="text-gray-400 text-sm">{member.email}</p>
-                  </div>
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
-      </div>
     </div>
   );
 }

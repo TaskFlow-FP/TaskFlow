@@ -256,11 +256,22 @@ export default function HomePage() {
 
   return (
     <SidebarLayout>
-      <div className="px-6 py-8">
-        <div className="mb-8">
-          <h1 className="text-4xl font-bold text-white mb-2">Dashboard</h1>
-          <p className="text-gray-400">Overview of all your tasks and progress</p>
+      <div className="min-h-screen bg-gray-50">
+        <div className="bg-white border-b border-gray-200 px-6 py-4">
+          <div className="flex items-center justify-between max-w-7xl mx-auto">
+            <h1 className="text-2xl font-semibold text-gray-900">Dashboard</h1>
+            <div className="flex items-center gap-4">
+              <button className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 text-sm">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                </svg>
+                {new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
+              </button>
+            </div>
+          </div>
         </div>
+
+        <div className="max-w-7xl mx-auto p-6">
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           <div className="bg-gray-800 rounded-xl p-6 border border-gray-700">
@@ -635,6 +646,7 @@ export default function HomePage() {
             </div>
           )}
           </div>
+        </div>
         </div>
       </div>
     </SidebarLayout>

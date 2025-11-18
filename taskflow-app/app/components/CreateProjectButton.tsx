@@ -10,7 +10,7 @@ export default function CreateProjectButton() {
         <>
             <button
                 onClick={() => setIsModalOpen(true)}
-                className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg transition-colors"
+                className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-6 rounded-lg transition-colors duration-200 shadow-sm"
             >
                 + Create Project
             </button>

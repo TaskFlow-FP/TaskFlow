@@ -128,11 +128,15 @@ export default function CreateTaskPage() {
 
   return (
     <SidebarLayout>
-      <div className="max-w-4xl mx-auto">
-        <div className="bg-white rounded-lg shadow-lg p-8">
-          <h1 className="text-3xl font-bold text-gray-800 mb-6">Create New Task</h1>
-
-          <form onSubmit={handleSubmit} className="space-y-6">
+      <div className="min-h-screen bg-gray-50">
+        <div className="bg-white border-b border-gray-200 px-8 py-6">
+          <h1 className="text-2xl font-semibold text-gray-900">Create New Task</h1>
+          <p className="text-sm text-gray-600 mt-1">Add a new task to your project</p>
+        </div>
+        
+        <div className="p-8">
+          <div className="max-w-3xl mx-auto bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+            <form onSubmit={handleSubmit} className="space-y-6">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">Project *</label>
               <select
@@ -244,14 +248,14 @@ export default function CreateTaskPage() {
               <button
                 type="submit"
                 disabled={loading}
-                className="flex-1 bg-blue-600 text-white py-3 px-6 rounded-lg font-medium hover:bg-blue-700 disabled:opacity-50 transition-colors"
+                className="flex-1 bg-indigo-600 text-white py-3 px-6 rounded-lg font-medium hover:bg-indigo-700 disabled:opacity-50 transition-colors text-sm"
               >
                 {loading ? "Creating..." : "Create Task"}
               </button>
               <button
                 type="button"
                 onClick={() => router.push("/")}
-                className="px-6 py-3 border border-gray-300 rounded-lg font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+                className="px-6 py-3 border border-gray-300 rounded-lg font-medium text-gray-700 hover:bg-gray-50 transition-colors text-sm"
               >
                 Cancel
               </button>
@@ -259,6 +263,7 @@ export default function CreateTaskPage() {
           </form>
         </div>
       </div>
+    </div>
     </SidebarLayout>
   );
 }

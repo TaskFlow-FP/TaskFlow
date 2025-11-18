@@ -6,10 +6,10 @@ import TaskCard from './TaskCard';
 import { DndContext, DragEndEvent, DragStartEvent, PointerSensor, useSensor, useSensors, closestCenter, DragOverlay, useDroppable } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
 const columns = [
-    { id: 'backlog', title: 'Backlog' },
-    { id: 'todo', title: 'To Do' },
-    { id: 'in_progress', title: 'In Progress' },
-    { id: 'done', title: 'Done' }
+    { id: 'backlog', title: 'Backlog', color: '#6b7280' },
+    { id: 'todo', title: 'To Do', color: '#ef4444' },
+    { id: 'in_progress', title: 'In Progress', color: '#3b82f6' },
+    { id: 'done', title: 'Complete', color: '#22c55e' }
 ];
 
 const priorityOrder: { [key: string]: number } = {
@@ -141,22 +141,25 @@ export default function TaskBoard({ tasks }: { tasks: ITask[] }) {
     // Prevent hydration mismatch by only rendering DndContext on client
     if (!isMounted) {
         return (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-5">
+            <div className="flex gap-6 overflow-x-auto pb-4">
                 {columns.map(column => (
                     <div 
                         key={column.id}
-                        className="bg-gray-800 rounded-xl p-4 border-2 border-gray-700"
+                        className="min-w-[360px] flex-shrink-0"
                     >
-                        <div className="flex justify-between items-center mb-4">
-                            <h3 className="font-bold text-lg text-white">{column.title}</h3>
-                            <span className="text-gray-400 text-sm">{tasksByColumn[column.id]?.length || 0}</span>
+                        <div className="flex items-center space-x-2 mb-4">
+                            <div className="w-3 h-3 rounded-full" style={{ backgroundColor: column.color }}></div>
+                            <h2 className="font-semibold text-gray-900">{column.title}</h2>
+                            <span className="text-xs bg-gray-200 text-gray-600 px-2 py-1 rounded">
+                                {tasksByColumn[column.id]?.length || 0}
+                            </span>
                         </div>
-                        <div className="space-y-3 min-h-[400px] p-2">
+                        <div className="space-y-4">
                             {tasksByColumn[column.id]?.map(task => (
                                 <TaskCard key={task._id} task={task} />
                             ))}
                             {(!tasksByColumn[column.id] || tasksByColumn[column.id].length === 0) && (
-                                <div className="flex items-center justify-center h-full text-center text-gray-500">
+                                <div className="flex items-center justify-center h-32 text-center text-gray-400">
                                     <p className="text-sm">Drop tasks here</p>
                                 </div>
                             )}
@@ -174,7 +177,7 @@ export default function TaskBoard({ tasks }: { tasks: ITask[] }) {
             onDragStart={handleDragStart}
             onDragEnd={handleDragEnd}
         >
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-5">
+            <div className="flex gap-6 overflow-x-auto pb-4">
                 {columns.map(column => (
                     <DroppableColumn 
                         key={column.id} 
@@ -186,10 +189,10 @@ export default function TaskBoard({ tasks }: { tasks: ITask[] }) {
             
             <DragOverlay>
                 {activeTask ? (
-                    <div className="bg-gray-700 p-4 rounded-lg shadow-lg border border-gray-600 opacity-90">
+                    <div className="bg-white p-4 rounded-lg shadow-xl border border-gray-200 opacity-90">
                         <div className="flex justify-between items-start">
-                            <h4 className="font-bold text-white pr-2">{activeTask.title}</h4>
-                            <span className={`px-2 py-1 text-xs font-semibold rounded-full`}>
+                            <h4 className="font-medium text-gray-900 pr-2">{activeTask.title}</h4>
+                            <span className="px-2 py-1 text-xs font-medium rounded">
                                 {activeTask.priority}
                             </span>
                         </div>
@@ -200,40 +203,45 @@ export default function TaskBoard({ tasks }: { tasks: ITask[] }) {
     );
 }
 
-function DroppableColumn({ column, tasks }: { column: { id: string; title: string }, tasks: ITask[] }) {
+function DroppableColumn({ column, tasks }: { column: { id: string; title: string; color: string }, tasks: ITask[] }) {
     const { setNodeRef, isOver } = useDroppable({
         id: column.id,
     });
 
     return (
-        <div 
-            ref={setNodeRef} 
-            className={`flex flex-col bg-gray-800 rounded-xl border-2 transition-colors ${
-                isOver ? 'border-blue-500 bg-gray-700' : 'border-gray-700'
-            }`}
-            style={{ minHeight: '300px' }}
-        >
-            <div className="flex justify-between items-center p-4 pb-2">
-                <h3 className="font-bold text-lg text-white">{column.title}</h3>
-                <span className="text-gray-400 text-sm">{tasks.length}</span>
+        <div className="min-w-[360px] flex-shrink-0">
+            <div className="flex items-center space-x-2 mb-4">
+                <div className="w-3 h-3 rounded-full" style={{ backgroundColor: column.color }}></div>
+                <h2 className="font-semibold text-gray-900">{column.title}</h2>
+                <span className="text-xs bg-gray-200 text-gray-600 px-2 py-1 rounded">
+                    {tasks.length}
+                </span>
             </div>
 
-            <SortableContext
-                items={tasks.map(t => t._id)}
-                strategy={verticalListSortingStrategy}
+            <div 
+                ref={setNodeRef}
+                className={`transition-colors rounded-lg ${
+                    isOver ? 'bg-gray-50' : ''
+                }`}
+                style={{ minHeight: '400px' }}
             >
-                <div className="flex-1 p-4 pt-2 space-y-3 min-h-[200px]">
-                    {tasks.map(task => (
-                        <TaskCard key={task._id} task={task} />
-                    ))}
-                    
-                    {tasks.length === 0 && (
-                        <div className="flex items-center justify-center h-full text-center text-gray-500">
-                            <p className="text-sm">Drop tasks here</p>
-                        </div>
-                    )}
-                </div>
-            </SortableContext>
+                <SortableContext
+                    items={tasks.map(t => t._id)}
+                    strategy={verticalListSortingStrategy}
+                >
+                    <div className="space-y-4">
+                        {tasks.map(task => (
+                            <TaskCard key={task._id} task={task} />
+                        ))}
+                        
+                        {tasks.length === 0 && (
+                            <div className="flex items-center justify-center h-32 text-center text-gray-400">
+                                <p className="text-sm">Drop tasks here</p>
+                            </div>
+                        )}
+                    </div>
+                </SortableContext>
+            </div>
         </div>
     );
 }
