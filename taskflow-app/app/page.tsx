@@ -14,6 +14,10 @@ export interface Task {
   priority: "low" | "medium" | "high" | "urgent";
   due_date: string | null;
   google_calendar_event_id: string | null;
+  project?: {
+    _id: string;
+    name: string;
+  } | null;
 }
 
 interface DashboardStats {
@@ -505,7 +509,7 @@ export default function HomePage() {
                 >
                   <div className="flex items-start justify-between gap-4">
                     <div className="flex-1">
-                      <div className="flex items-center gap-3 mb-2">
+                      <div className="flex items-center gap-3 mb-2 flex-wrap">
                         <h3 className="text-lg font-semibold text-white">
                           {task.title}
                         </h3>
@@ -516,6 +520,11 @@ export default function HomePage() {
                         >
                           {task.priority}
                         </span>
+                        {task.project && (
+                          <span className="px-3 py-1 rounded-lg text-xs font-medium bg-purple-900/30 border border-purple-600 text-purple-400">
+                            📁 {task.project.name}
+                          </span>
+                        )}
                       </div>
 
                       {task.description && (

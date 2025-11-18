@@ -113,8 +113,19 @@ export async function GET(req: NextRequest) {
       .limit(limit)
       .get();
 
+    const projects = await Project.query()
+      .whereIn('_id', [...new Set(tasks.map(t => t.projectId))])
+      .get();
+    
+    const projectMap = new Map(projects.map(p => [p._id.toString(), p]));
+
+    const enrichedTasks = tasks.map(task => ({
+      ...task,
+      project: projectMap.get(task.projectId.toString()) || null
+    }));
+
     return NextResponse.json({ 
-      tasks,
+      tasks: enrichedTasks,
       pagination: {
         currentPage: page,
         totalPages: Math.ceil(totalTasks / limit),

@@ -74,12 +74,45 @@ export default function CreateTaskPage() {
       const res = await fetch("/api/tasks", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(finalFormData),
+        body: JSON.stringify({
+          projectId: finalFormData.projectId,
+          title: finalFormData.title,
+          description: finalFormData.description,
+          status: finalFormData.status,
+          priority: finalFormData.priority,
+          dueDate: finalFormData.due_date,
+        }),
       });
 
       if (res.ok) {
-        Swal.fire({ title: "Task Created", icon: "success", timer: 1500, showConfirmButton: false });
-        router.push("/");
+        const data = await res.json();
+        const taskId = data.task?._id || data._id;
+        
+        if (formData.due_date && taskId) {
+          const result = await Swal.fire({
+            title: "Task Created!",
+            text: "Do you want to sync this task to Google Calendar?",
+            icon: "success",
+            showCancelButton: true,
+            confirmButtonText: "Yes, sync to calendar",
+            cancelButtonText: "View task",
+            confirmButtonColor: "#3b82f6",
+          });
+          
+          if (result.isConfirmed) {
+            router.push(`/task/${taskId}?sync=true`);
+          } else {
+            router.push(`/task/${taskId}`);
+          }
+        } else {
+          await Swal.fire({ 
+            title: "Task Created", 
+            icon: "success", 
+            timer: 1500, 
+            showConfirmButton: false 
+          });
+          router.push(taskId ? `/task/${taskId}` : "/");
+        }
       } else {
         const data = await res.json();
         Swal.fire("Failed", data.error || "Something went wrong", "error");
@@ -101,7 +134,7 @@ export default function CreateTaskPage() {
 
           <form onSubmit={handleSubmit} className="space-y-6">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Project</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Project *</label>
               <select
                 value={formData.projectId}
                 onChange={(e) => setFormData({ ...formData, projectId: e.target.value })}
@@ -109,9 +142,17 @@ export default function CreateTaskPage() {
               >
                 <option value="">Select a project</option>
                 {projects.map((p) => (
-                  <option key={p._id} value={p._id}>{p.name}</option>
+                  <option key={p._id} value={p._id}>📁 {p.name}</option>
                 ))}
               </select>
+              {formData.projectId && (
+                <div className="mt-2 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                  <p className="text-sm text-blue-700">
+                    <span className="font-semibold">Selected Project:</span>{" "}
+                    {projects.find(p => p._id === formData.projectId)?.name}
+                  </p>
+                </div>
+              )}
             </div>
 
             <div>

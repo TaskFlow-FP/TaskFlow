@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import SidebarLayout from "@/app/components/SidebarLayout";
 import Swal from "sweetalert2";
 
@@ -16,6 +16,10 @@ interface Task {
   google_calendar_event_id: string | null;
   createdAt: string;
   updatedAt: string;
+  project?: {
+    _id: string;
+    name: string;
+  } | null;
 }
 
 interface Comment {
@@ -36,12 +40,16 @@ interface CurrentUser {
   id: string;
   email: string;
   name: string;
+  hasGoogleCalendar?: boolean;
+  isGoogleUser?: boolean;
 }
 
 export default function TaskDetailPage() {
   const params = useParams();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const taskId = params.id as string;
+  const shouldAutoSync = searchParams.get('sync') === 'true';
 
   const [task, setTask] = useState<Task | null>(null);
   const [comments, setComments] = useState<Comment[]>([]);
@@ -51,6 +59,7 @@ export default function TaskDetailPage() {
   const [editContent, setEditContent] = useState("");
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [syncing, setSyncing] = useState(false);
   const commentsEndRef = useRef<HTMLDivElement>(null);
 
   const fetchTask = async () => {
@@ -60,6 +69,21 @@ export default function TaskDetailPage() {
       if (res.ok) {
         const foundTask = data.tasks.find((t: Task) => t._id === taskId);
         if (foundTask) {
+          if (foundTask.projectId) {
+            try {
+              const projectRes = await fetch(`/api/projects/${foundTask.projectId}`);
+              
+              if (projectRes.ok) {
+                const projectData = await projectRes.json();
+                
+                foundTask.project = {
+                  _id: projectData.project._id,
+                  name: projectData.project.name
+                };
+              }
+            } catch (err) {
+            }
+          }
           setTask(foundTask);
         } else {
           Swal.fire({
@@ -102,10 +126,10 @@ export default function TaskDetailPage() {
       const res = await fetch("/api/users/me");
       const data = await res.json();
       if (res.ok) {
+        console.log("Current user data:", data);
         setCurrentUser(data);
       }
     } catch (error) {
-      console.error("Failed to fetch current user:", error);
     }
   };
 
@@ -118,6 +142,16 @@ export default function TaskDetailPage() {
   useEffect(() => {
     initializePage();
   }, [taskId]);
+
+  // Auto-sync to calendar if requested
+  useEffect(() => {
+    if (shouldAutoSync && task && currentUser?.isGoogleUser && task.due_date && !task.google_calendar_event_id && !syncing) {
+      // Remove sync param from URL
+      router.replace(`/task/${taskId}`, { scroll: false });
+      // Trigger sync
+      handleSyncCalendar();
+    }
+  }, [shouldAutoSync, task, currentUser]);
 
   // SSE for realtime updates
   useEffect(() => {
@@ -262,6 +296,112 @@ export default function TaskDetailPage() {
     setEditContent(comment.content);
   };
 
+  const handleSyncCalendar = async () => {
+    if (!task?.due_date) {
+      Swal.fire('Error', 'Task must have a due date to sync with calendar', 'error');
+      return;
+    }
+
+    setSyncing(true);
+    try {
+      const res = await fetch(`/api/tasks/${taskId}/calendar`, {
+        method: 'POST',
+      });
+
+      const data = await res.json();
+
+      if (res.ok) {
+        Swal.fire('Success', 'Task synced to Google Calendar!', 'success');
+        await fetchTask();
+      } else if (res.status === 403) {
+        // Calendar API not enabled
+        Swal.fire({
+          icon: 'error',
+          title: 'Calendar API Not Enabled',
+          html: `
+            <p>Google Calendar API needs to be enabled in Google Cloud Console.</p>
+            <p class="text-sm mt-3 text-gray-600">Steps for administrator:</p>
+            <ol class="text-left text-sm mt-2 ml-6 space-y-1">
+              <li>1. Visit <a href="https://console.developers.google.com/apis/api/calendar-json.googleapis.com/overview?project=426382311425" target="_blank" class="text-blue-500 underline">Google Cloud Console</a></li>
+              <li>2. Click "Enable API"</li>
+              <li>3. Wait 2-3 minutes for activation</li>
+            </ol>
+          `,
+          width: '600px',
+        });
+      } else if (res.status === 401 || data.needsReauth) {
+        // Token expired, need re-auth
+        const result = await Swal.fire({
+          icon: 'warning',
+          title: 'Re-authentication Required',
+          text: 'Your Google Calendar access has expired. Please login again with Google.',
+          showCancelButton: true,
+          confirmButtonText: 'Login with Google',
+          cancelButtonText: 'Cancel',
+        });
+
+        if (result.isConfirmed) {
+          window.location.href = '/api/auth/google';
+        }
+      } else if (res.status === 400 && data.error?.includes('logout and login')) {
+        // User needs to re-authenticate with Google
+        const result = await Swal.fire({
+          icon: 'info',
+          title: 'Google Calendar Permission Needed',
+          text: 'To sync with Google Calendar, we need additional permissions. You will be redirected to sign in with Google.',
+          showCancelButton: true,
+          confirmButtonText: 'Continue with Google',
+          cancelButtonText: 'Cancel',
+        });
+
+        if (result.isConfirmed) {
+          window.location.href = '/api/auth/google';
+        }
+      } else {
+        Swal.fire({
+          icon: 'error',
+          title: 'Calendar Sync Failed',
+          html: data.error || 'Failed to sync with calendar',
+        });
+      }
+    } catch (error) {
+      Swal.fire('Error', 'Failed to sync with Google Calendar', 'error');
+    }
+    setSyncing(false);
+  };
+
+  const handleUnsyncCalendar = async () => {
+    const result = await Swal.fire({
+      title: 'Remove Calendar Sync?',
+      text: 'This will remove the event from Google Calendar',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'Yes, remove it',
+      cancelButtonText: 'Cancel',
+    });
+
+    if (!result.isConfirmed) return;
+
+    setSyncing(true);
+    try {
+      const res = await fetch(`/api/tasks/${taskId}/calendar`, {
+        method: 'DELETE',
+      });
+
+      const data = await res.json();
+
+      if (res.ok) {
+        Swal.fire('Success', 'Calendar sync removed', 'success');
+        await fetchTask();
+      } else {
+        Swal.fire('Error', data.error || 'Failed to remove calendar sync', 'error');
+      }
+    } catch (error) {
+      Swal.fire('Error', 'Failed to remove calendar sync', 'error');
+    }
+    setSyncing(false);
+  };
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case "done":
@@ -353,7 +493,19 @@ export default function TaskDetailPage() {
             <span className="text-xl">←</span>
             <span>Back to Dashboard</span>
           </button>
-          <h1 className="text-4xl font-bold text-white">Task Details</h1>
+          {task.project && (
+            <div className="mb-2">
+              <span className="text-sm font-medium text-gray-400 uppercase tracking-wider">
+                Project
+              </span>
+              <h2 className="text-2xl font-bold text-blue-400 mt-1">
+                {task.project.name}
+              </h2>
+            </div>
+          )}
+          <h1 className="text-4xl font-bold text-white">
+            {task.title}
+          </h1>
         </div>
 
         {/* Task Information Card */}
@@ -361,7 +513,7 @@ export default function TaskDetailPage() {
           <div className="flex items-start justify-between mb-6">
             <div className="flex-1">
               <h2 className="text-3xl font-bold text-white mb-4">{task.title}</h2>
-              <div className="flex items-center gap-3 mb-4">
+              <div className="flex items-center gap-3 mb-4 flex-wrap">
                 <span
                   className={`px-4 py-2 rounded-full text-sm font-bold uppercase ${getStatusColor(
                     task.status
@@ -376,6 +528,11 @@ export default function TaskDetailPage() {
                 >
                   {task.priority}
                 </span>
+                {task.project && (
+                  <span className="px-4 py-2 rounded-lg text-sm font-medium bg-purple-900/30 border border-purple-600 text-purple-400">
+                    📁 Project: {task.project.name}
+                  </span>
+                )}
               </div>
             </div>
           </div>
@@ -387,40 +544,92 @@ export default function TaskDetailPage() {
             </div>
           )}
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-            {task.due_date && (
-              <div className="bg-gray-700/50 rounded-lg p-4">
-                <p className="text-gray-400 mb-1">Due Date</p>
-                <p className="text-white font-medium">
-                  📅{" "}
-                  {new Date(task.due_date).toLocaleDateString("en-US", {
-                    weekday: "long",
-                    year: "numeric",
-                    month: "long",
-                    day: "numeric",
-                  })}
-                </p>
-              </div>
-            )}
-
-            <div className="bg-gray-700/50 rounded-lg p-4">
-              <p className="text-gray-400 mb-1">Created</p>
+          {/* Due Date */}
+          {task.due_date && (
+            <div className="bg-gray-700/50 rounded-lg p-4 mb-6">
+              <p className="text-gray-400 mb-1">Due Date</p>
               <p className="text-white font-medium">
-                {new Date(task.createdAt).toLocaleDateString("en-US", {
+                📅{" "}
+                {new Date(task.due_date).toLocaleDateString("en-US", {
+                  weekday: "long",
                   year: "numeric",
                   month: "long",
                   day: "numeric",
                 })}
               </p>
             </div>
+          )}
 
-            {task.google_calendar_event_id && (
-              <div className="bg-gray-700/50 rounded-lg p-4">
-                <p className="text-gray-400 mb-1">Calendar Sync</p>
-                <p className="text-blue-400 font-medium">🗓️ Synced with Google Calendar</p>
+          {/* Google Calendar Sync - Full Width for Better Visibility */}
+          {task.due_date && (
+            <div className="bg-gradient-to-r from-blue-900/30 to-purple-900/30 rounded-lg p-5 border-2 border-blue-600/50 mb-6">
+              <div className="flex items-center gap-3 mb-3">
+                <span className="text-3xl">🗓️</span>
+                <div>
+                  <h3 className="text-lg font-bold text-white">Google Calendar Sync</h3>
+                  <p className="text-xs text-gray-400">Keep your tasks organized in Google Calendar</p>
+                </div>
               </div>
-            )}
-          </div>
+              
+              {/* Already Synced */}
+              {task.google_calendar_event_id ? (
+                <div className="bg-green-900/20 border border-green-600/50 rounded-lg p-4">
+                  <p className="text-green-400 font-medium mb-3 flex items-center gap-2">
+                    <span className="text-xl">✅</span>
+                    <span>Synced with Google Calendar</span>
+                  </p>
+                  <button
+                    onClick={handleUnsyncCalendar}
+                    disabled={syncing}
+                    className="px-4 py-2 bg-red-600/20 border border-red-500 text-red-400 rounded hover:bg-red-600/30 disabled:opacity-50 text-sm"
+                  >
+                    {syncing ? 'Removing...' : '🗑️ Remove Sync'}
+                  </button>
+                </div>
+              ) : currentUser?.isGoogleUser ? (
+                /* Google User - Can Sync */
+                <button
+                  onClick={handleSyncCalendar}
+                  disabled={syncing}
+                  className="w-full py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 font-medium text-base shadow-lg hover:shadow-xl transition-all"
+                >
+                  {syncing ? '⏳ Syncing...' : '➕ Add to Google Calendar'}
+                </button>
+              ) : (
+                /* Non-Google User - Need to Sign In */
+                <div className="bg-gray-800/50 rounded-lg p-4 border border-gray-600">
+                  <p className="text-gray-400 text-sm mb-4">
+                    ℹ️ Sign in with Google to enable calendar sync
+                  </p>
+                  <button
+                    onClick={() => {
+                      Swal.fire({
+                        icon: 'info',
+                        title: 'Google Account Required',
+                        text: 'To sync with Google Calendar, you need to sign in with a Google account.',
+                        showCancelButton: true,
+                        confirmButtonText: 'Sign in with Google',
+                        cancelButtonText: 'Cancel',
+                      }).then((result) => {
+                        if (result.isConfirmed) {
+                          window.location.href = '/api/auth/google';
+                        }
+                      });
+                    }}
+                    className="w-full py-3 bg-white text-gray-900 rounded-lg hover:bg-gray-100 font-medium text-base flex items-center justify-center gap-3 shadow-md hover:shadow-lg transition-all"
+                  >
+                    <svg className="w-5 h-5" viewBox="0 0 24 24">
+                      <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+                      <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+                      <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
+                      <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+                    </svg>
+                    Sign in with Google
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Comments Section */}

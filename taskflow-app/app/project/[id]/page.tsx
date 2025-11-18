@@ -21,6 +21,8 @@ export interface ITask {
     title: string
     status: string
     priority: string
+    due_date?: string | null
+    google_calendar_event_id?: string | null
 }
 
 export interface IProject {
@@ -56,7 +58,6 @@ async function getProjectDetail(projectId: string): Promise<ProjectDetails | nul
 
         return resp.json();
     } catch (error) {
-        console.error("getProjectDetails Error:", error);
         return null;
     }
 }
@@ -64,8 +65,6 @@ async function getProjectDetail(projectId: string): Promise<ProjectDetails | nul
 export default async function ProjectDetailPage({ params }: { params: Promise<{ id: string }> }) {
     const { id } = await params
     const data = await getProjectDetail(id)
-    
-    console.log(data, "<<< data")
 
     if (!data) {
         return (

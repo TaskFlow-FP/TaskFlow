@@ -78,22 +78,10 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
         const currentUser = getCurrentUser(request);
         const { id: projectId } = await params;
 
-        console.log('GET /api/projects/[id] - projectId:', projectId);
-        console.log('GET /api/projects/[id] - currentUser.id:', currentUser.id);
-        console.log('GET /api/projects/[id] - new ObjectId(projectId):', new ObjectId(projectId));
-        console.log('GET /api/projects/[id] - new ObjectId(currentUser.id):', new ObjectId(currentUser.id));
-
-        // Cek semua members di project ini
-        const allMembers = await Member.where('projectId', new ObjectId(projectId)).get();
-        console.log('GET /api/projects/[id] - allMembers count:', allMembers.length);
-        console.log('GET /api/projects/[id] - allMembers:', JSON.stringify(allMembers, null, 2));
-
         const membership = await Member.where('projectId', new ObjectId(projectId))
                                        .where('userId', new ObjectId(currentUser.id))
                                        .where('invitation_status', 'accepted')
                                        .first();
-        
-        console.log('GET /api/projects/[id] - membership:', membership);
         
         if (!membership) {
             return NextResponse.json({ error: "Forbidden" }, { status: 403 });

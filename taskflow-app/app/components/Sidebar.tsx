@@ -90,9 +90,10 @@ export default function Sidebar() {
           <div className="p-4 border-t border-gray-700">
             <button
               onClick={handleLogout}
-              className="flex items-center w-full px-4 py-3 rounded-lg text-gray-300 hover:bg-red-600 hover:text-white transition-colors"
+              className="flex items-center justify-center w-full px-4 py-3 rounded-lg text-gray-300 hover:bg-red-600 hover:text-white transition-colors"
             >
               {isOpen && <span className="font-medium">Logout</span>}
+              {!isOpen && <span>⎋</span>}
             </button>
           </div>
         </div>

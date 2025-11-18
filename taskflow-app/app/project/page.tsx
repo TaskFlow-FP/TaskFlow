@@ -19,7 +19,6 @@ async function getProjects(): Promise<ProjectType[]> {
     try {
         const cookieStore = await cookies()
         const token = cookieStore.get('access_token')
-        // console.log(token, '<<<< access_token')
 
         if (!token) {
             return []

@@ -31,9 +31,6 @@ export async function POST(request: NextRequest) {
             sameSite: 'lax'
         })
 
-        console.log('Token set:', token);
-        console.log('Cookie set successfully');
-
         return NextResponse.json({ message: 'Login successfully' })
     } catch (error: any) {
         if (error instanceof ZodError) {
