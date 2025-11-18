@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { ITask } from './page';
 import TaskCard from './TaskCard';
-import { DndContext, DragEndEvent, DragStartEvent, PointerSensor, useSensor, useSensors, closestCorners, DragOverlay, useDroppable } from '@dnd-kit/core';
+import { DndContext, DragEndEvent, DragStartEvent, PointerSensor, useSensor, useSensors, closestCenter, DragOverlay, useDroppable } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
 const columns = [
     { id: 'backlog', title: 'Backlog' },
@@ -42,6 +42,11 @@ const groupTasksByColumn = (tasks: ITask[]) => {
 export default function TaskBoard({ tasks }: { tasks: ITask[] }) {
     const [tasksByColumn, setTasksByColumn] = useState(groupTasksByColumn(tasks));
     const [activeTask, setActiveTask] = useState<ITask | null>(null);
+    const [isMounted, setIsMounted] = useState(false);
+
+    useEffect(() => {
+        setIsMounted(true);
+    }, []);
 
     const sensors = useSensors(
         useSensor(PointerSensor, {
@@ -133,14 +138,43 @@ export default function TaskBoard({ tasks }: { tasks: ITask[] }) {
         }
     };
 
+    // Prevent hydration mismatch by only rendering DndContext on client
+    if (!isMounted) {
+        return (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-5">
+                {columns.map(column => (
+                    <div 
+                        key={column.id}
+                        className="bg-gray-800 rounded-xl p-4 border-2 border-gray-700"
+                    >
+                        <div className="flex justify-between items-center mb-4">
+                            <h3 className="font-bold text-lg text-white">{column.title}</h3>
+                            <span className="text-gray-400 text-sm">{tasksByColumn[column.id]?.length || 0}</span>
+                        </div>
+                        <div className="space-y-3 min-h-[400px] p-2">
+                            {tasksByColumn[column.id]?.map(task => (
+                                <TaskCard key={task._id} task={task} />
+                            ))}
+                            {(!tasksByColumn[column.id] || tasksByColumn[column.id].length === 0) && (
+                                <div className="flex items-center justify-center h-full text-center text-gray-500">
+                                    <p className="text-sm">Drop tasks here</p>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                ))}
+            </div>
+        );
+    }
+
     return (
         <DndContext 
             sensors={sensors} 
-            collisionDetection={closestCorners} 
+            collisionDetection={closestCenter} 
             onDragStart={handleDragStart}
             onDragEnd={handleDragEnd}
         >
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-5">
                 {columns.map(column => (
                     <DroppableColumn 
                         key={column.id} 
@@ -174,11 +208,12 @@ function DroppableColumn({ column, tasks }: { column: { id: string; title: strin
     return (
         <div 
             ref={setNodeRef} 
-            className={`bg-gray-800 rounded-xl p-4 border-2 transition-colors ${
+            className={`flex flex-col bg-gray-800 rounded-xl border-2 transition-colors ${
                 isOver ? 'border-blue-500 bg-gray-700' : 'border-gray-700'
             }`}
+            style={{ minHeight: '300px' }}
         >
-            <div className="flex justify-between items-center mb-4">
+            <div className="flex justify-between items-center p-4 pb-2">
                 <h3 className="font-bold text-lg text-white">{column.title}</h3>
                 <span className="text-gray-400 text-sm">{tasks.length}</span>
             </div>
@@ -187,7 +222,7 @@ function DroppableColumn({ column, tasks }: { column: { id: string; title: strin
                 items={tasks.map(t => t._id)}
                 strategy={verticalListSortingStrategy}
             >
-                <div className="space-y-3 min-h-[400px] p-2">
+                <div className="flex-1 p-4 pt-2 space-y-3 min-h-[200px]">
                     {tasks.map(task => (
                         <TaskCard key={task._id} task={task} />
                     ))}

@@ -2,13 +2,8 @@
 
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from '@dnd-kit/utilities';
-
-interface Task {
-  _id: string;
-  title: string;
-  status: string;
-  priority: string;
-}
+import { useParams, useRouter } from "next/navigation";
+import { ITask } from "./page";
 
 const getPriorityColor = (priority: string) => {
   switch (priority) {
@@ -20,7 +15,11 @@ const getPriorityColor = (priority: string) => {
   }
 };
 
-export default function TaskCard({ task }: { task: Task }) {
+export default function TaskCard({ task }: { task: ITask }) {
+    const params = useParams();
+    const router = useRouter();
+    const projectId = params.id as string;
+
     const {
         attributes,
         listeners,
@@ -36,20 +35,38 @@ export default function TaskCard({ task }: { task: Task }) {
         opacity: isDragging ? 0.5 : 1,
     };
 
+    const handleClick = (e: React.MouseEvent) => {
+        if (!isDragging) {
+            router.push(`/task/${task._id}`);
+        }
+    };
+
     return (
         <div
-        ref={setNodeRef}
-        style={style}
-        {...attributes}
-        {...listeners}
-        className="bg-gray-700 p-4 rounded-lg shadow-md border border-gray-600 hover:border-blue-500 cursor-grab active:cursor-grabbing touch-none transition-colors"
+            ref={setNodeRef}
+            style={style}
+            {...attributes}
+            {...listeners}
+            className="bg-gray-700 p-4 rounded-lg shadow-md border border-gray-600 hover:border-blue-500 cursor-grab active:cursor-grabbing touch-none transition-colors"
         >
-        <div className="flex justify-between items-start">
-            <h4 className="font-bold text-white pr-2">{task.title}</h4>
-            <span className={`px-2 py-1 text-xs font-semibold rounded-full ${getPriorityColor(task.priority)}`}>
-            {task.priority}
-            </span>
-        </div>
+            <div className="flex justify-between items-start mb-2">
+                <h4 
+                    onClick={handleClick}
+                    onPointerDown={(e) => e.stopPropagation()}
+                    className="font-bold text-white pr-2 cursor-pointer hover:text-blue-400 transition-colors"
+                >
+                    {task.title}
+                </h4>
+                <span className={`px-2 py-1 text-xs font-semibold rounded-full ${getPriorityColor(task.priority)}`}>
+                    {task.priority}
+                </span>
+            </div>
+
+            {task.due_date && (
+                <p className="text-gray-500 text-xs">
+                    Due: {new Date(task.due_date).toLocaleDateString()}
+                </p>
+            )}
         </div>
     );
 }
