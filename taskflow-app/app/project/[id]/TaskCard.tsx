@@ -15,6 +15,20 @@ const getPriorityColor = (priority: string) => {
   }
 };
 
+const formatDueDate = (dateString: string | null | undefined) => {
+  if (!dateString) return null;
+  const date = new Date(dateString);
+  const now = new Date();
+  const diffTime = date.getTime() - now.getTime();
+  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+  
+  if (diffDays < 0) return { text: `${Math.abs(diffDays)}d overdue`, color: 'text-red-400' };
+  if (diffDays === 0) return { text: 'Due today', color: 'text-yellow-400' };
+  if (diffDays === 1) return { text: 'Due tomorrow', color: 'text-blue-400' };
+  if (diffDays <= 7) return { text: `${diffDays}d left`, color: 'text-green-400' };
+  return { text: date.toLocaleDateString(), color: 'text-gray-400' };
+};
+
 export default function TaskCard({ task }: { task: ITask }) {
     const params = useParams();
     const router = useRouter();
@@ -41,6 +55,8 @@ export default function TaskCard({ task }: { task: ITask }) {
         }
     };
 
+    const dueInfo = formatDueDate(task.due_date);
+
     return (
         <div
             ref={setNodeRef}
@@ -62,10 +78,14 @@ export default function TaskCard({ task }: { task: ITask }) {
                 </span>
             </div>
 
-            {task.due_date && (
-                <p className="text-gray-500 text-xs">
-                    Due: {new Date(task.due_date).toLocaleDateString()}
-                </p>
+            {dueInfo && (
+                <div className="flex items-center gap-2 text-xs mt-2">
+                    <span className="text-gray-400">📅</span>
+                    <span className={dueInfo.color}>{dueInfo.text}</span>
+                    {task.google_calendar_event_id && (
+                        <span className="text-blue-400" title="Synced with Google Calendar">🗓️</span>
+                    )}
+                </div>
             )}
         </div>
     );

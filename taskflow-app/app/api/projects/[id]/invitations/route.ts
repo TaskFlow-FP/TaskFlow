@@ -41,10 +41,6 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
 
         const acceptUrl = `http://localhost:3000/invitation/accept?token=${invitationToken}`
 
-        console.log('📧 Attempting to send email to:', invitee.email);
-        console.log('📧 Invitation URL:', acceptUrl);
-        console.log('📧 RESEND_API_KEY exists:', !!process.env.RESEND_API_KEY);
-
         const emailResult = await resend.emails.send({
             from: 'TaskFlow <invitations@akbarbudi.xyz>',
             to: invitee.email,
@@ -58,11 +54,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
             `
         })
 
-        console.log('📧 Email send result:', emailResult);
-
         if (emailResult.error) {
-            console.error('📧 Email send error:', emailResult.error);
-            // Rollback: hapus member yang baru dibuat karena email gagal dikirim
             await Member.where('_id', new ObjectId(newMember._id)).delete();
             return NextResponse.json({ error: 'Failed to send invitation email. Please try again.' }, { status: 500 });
         }

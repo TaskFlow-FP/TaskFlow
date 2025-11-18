@@ -41,11 +41,8 @@ export async function POST(request: NextRequest) {
 
 export async function GET(request: NextRequest) {
     try {
-        const currentUser = getCurrentUser(request)
-        console.log("ID DARI TOKEN:", currentUser.id);
-        console.log("ID SETELAH DIUBAH JADI OBJECTID:", new ObjectId(currentUser.id));
-        const memberships = await Member.where('userId', new ObjectId(currentUser.id)).where('invitation_status', 'accepted').get()
-        console.log("JUMLAH MEMBERSHIP DITEMUKAN:", memberships.length);
+        const currentUser = getCurrentUser(request);
+        const memberships = await Member.where('userId', new ObjectId(currentUser.id)).where('invitation_status', 'accepted').get();
         const projectIds = memberships.map(member => member.projectId)
 
         if (projectIds.length === 0) {
