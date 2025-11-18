@@ -189,6 +189,13 @@ export default function HomePage() {
   };
 
   const handleStatusChange = async (taskId: string, newStatus: string) => {
+    // Optimistic update
+    setTasks(prevTasks => 
+      prevTasks.map(task => 
+        task._id === taskId ? { ...task, status: newStatus as Task['status'] } : task
+      )
+    );
+
     try {
       const res = await fetch(`/api/tasks/${taskId}`, {
         method: "PATCH",
@@ -196,7 +203,12 @@ export default function HomePage() {
         body: JSON.stringify({ status: newStatus }),
       });
 
-      if (!res.ok) {
+      if (res.ok) {
+        // Refresh stats after successful update
+        fetchStats();
+      } else {
+        // Revert on error
+        fetchTasks();
         const data = await res.json();
         await Swal.fire({
           icon: "error",
@@ -207,6 +219,8 @@ export default function HomePage() {
         });
       }
     } catch (error) {
+      // Revert on error
+      fetchTasks();
       await Swal.fire({
         icon: "error",
         title: "Error",
@@ -220,30 +234,30 @@ export default function HomePage() {
   const getStatusColor = (status: string) => {
     switch (status) {
       case "done":
-        return "bg-green-900/30 border-green-600 text-green-400";
+        return "bg-green-700 text-white border-green-800";
       case "in_progress":
-        return "bg-blue-900/30 border-blue-600 text-blue-400";
+        return "bg-blue-700 text-white border-blue-800";
       case "todo":
-        return "bg-yellow-900/30 border-yellow-600 text-yellow-400";
+        return "bg-yellow-600 text-white border-yellow-700";
       case "backlog":
-        return "bg-gray-900/30 border-gray-600 text-gray-400";
+        return "bg-gray-700 text-white border-gray-800";
       default:
-        return "bg-gray-900/30 border-gray-600 text-gray-400";
+        return "bg-gray-700 text-white border-gray-800";
     }
   };
 
   const getPriorityColor = (priority: string) => {
     switch (priority) {
       case "urgent":
-        return "bg-red-600 text-white";
+        return "bg-red-700 text-white";
       case "high":
-        return "bg-orange-600 text-white";
+        return "bg-orange-700 text-white";
       case "medium":
-        return "bg-yellow-600 text-white";
+        return "bg-yellow-700 text-white";
       case "low":
-        return "bg-green-600 text-white";
+        return "bg-green-700 text-white";
       default:
-        return "bg-gray-600 text-white";
+        return "bg-gray-700 text-white";
     }
   };
 
@@ -274,51 +288,51 @@ export default function HomePage() {
         <div className="max-w-7xl mx-auto p-6">
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <div className="bg-gray-800 rounded-xl p-6 border border-gray-700">
+          <div className="bg-white rounded-xl p-6 border border-gray-200 shadow-sm">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-gray-400 text-sm font-medium">Total Tasks</p>
-                <p className="text-3xl font-bold text-white mt-2">{stats?.totalTasks || 0}</p>
+                <p className="text-gray-600 text-sm font-medium">Total Tasks</p>
+                <p className="text-3xl font-bold text-gray-900 mt-2">{stats?.totalTasks || 0}</p>
               </div>
-              <div className="w-12 h-12 rounded-full bg-blue-900/30 flex items-center justify-center text-2xl">
+              <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center text-2xl">
                 📊
               </div>
             </div>
           </div>
 
-          <div className="bg-gray-800 rounded-xl p-6 border border-gray-700">
+          <div className="bg-white rounded-xl p-6 border border-gray-200 shadow-sm">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-gray-400 text-sm font-medium">Completed</p>
-                <p className="text-3xl font-bold text-white mt-2">{stats?.completedTasks || 0}</p>
+                <p className="text-gray-600 text-sm font-medium">Completed</p>
+                <p className="text-3xl font-bold text-gray-900 mt-2">{stats?.completedTasks || 0}</p>
               </div>
-              <div className="w-12 h-12 rounded-full bg-green-900/30 flex items-center justify-center text-2xl">
+              <div className="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center text-2xl">
                 ✅
               </div>
             </div>
           </div>
 
-          <div className="bg-gray-800 rounded-xl p-6 border border-gray-700">
+          <div className="bg-white rounded-xl p-6 border border-gray-200 shadow-sm">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-gray-400 text-sm font-medium">Completion Rate</p>
-                <p className="text-3xl font-bold text-white mt-2">{stats?.completionRate || 0}%</p>
+                <p className="text-gray-600 text-sm font-medium">Completion Rate</p>
+                <p className="text-3xl font-bold text-gray-900 mt-2">{stats?.completionRate || 0}%</p>
               </div>
-              <div className="w-12 h-12 rounded-full bg-purple-900/30 flex items-center justify-center text-2xl">
+              <div className="w-12 h-12 rounded-full bg-purple-100 flex items-center justify-center text-2xl">
                 📈
               </div>
             </div>
           </div>
 
-          <div className="bg-gray-800 rounded-xl p-6 border border-gray-700">
+          <div className="bg-white rounded-xl p-6 border border-gray-200 shadow-sm">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-gray-400 text-sm font-medium">Active Tasks</p>
-                <p className="text-3xl font-bold text-white mt-2">
+                <p className="text-gray-600 text-sm font-medium">Active Tasks</p>
+                <p className="text-3xl font-bold text-gray-900 mt-2">
                   {(stats?.totalTasks || 0) - (stats?.completedTasks || 0)}
                 </p>
               </div>
-              <div className="w-12 h-12 rounded-full bg-orange-900/30 flex items-center justify-center text-2xl">
+              <div className="w-12 h-12 rounded-full bg-orange-100 flex items-center justify-center text-2xl">
                 ⚡
               </div>
             </div>
@@ -326,9 +340,9 @@ export default function HomePage() {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-          <div className="bg-gray-800 rounded-xl p-6 border border-gray-700">
-            <h2 className="text-xl font-bold text-white mb-2">Task History (Per Year)</h2>
-            <p className="text-sm text-gray-400 mb-4">
+          <div className="bg-white rounded-xl p-6 border border-gray-200 shadow-sm">
+            <h2 className="text-xl font-bold text-gray-900 mb-2">Task History (Per Year)</h2>
+            <p className="text-sm text-gray-600 mb-4">
               {stats?.yearlyStats && stats.yearlyStats.length > 0 
                 ? `${stats.yearlyStats[0].year} - ${stats.yearlyStats[stats.yearlyStats.length - 1].year}`
                 : 'Last 5 years'}
@@ -337,12 +351,12 @@ export default function HomePage() {
               {stats?.yearlyStats.map((yearStat) => (
                 <div key={yearStat.year}>
                   <div className="flex justify-between items-center mb-2">
-                    <span className="text-gray-300 font-medium">{yearStat.year}</span>
-                    <span className="text-sm text-gray-400">
+                    <span className="text-gray-700 font-medium">{yearStat.year}</span>
+                    <span className="text-sm text-gray-600">
                       {yearStat.completed}/{yearStat.total} tasks ({yearStat.completionRate}%)
                     </span>
                   </div>
-                  <div className="w-full bg-gray-700 rounded-full h-3">
+                  <div className="w-full bg-gray-200 rounded-full h-3">
                     <div
                       className="bg-gradient-to-r from-blue-500 to-green-500 h-3 rounded-full transition-all duration-500"
                       style={{ width: `${yearStat.completionRate}%` }}
@@ -353,8 +367,8 @@ export default function HomePage() {
             </div>
           </div>
 
-          <div className="bg-gray-800 rounded-xl p-6 border border-gray-700">
-            <h2 className="text-xl font-bold text-white mb-6">Active Tasks by Priority</h2>
+          <div className="bg-white rounded-xl p-6 border border-gray-200 shadow-sm">
+            <h2 className="text-xl font-bold text-gray-900 mb-6">Active Tasks by Priority</h2>
             <div className="space-y-4">
               {[
                 { label: 'Urgent', value: stats?.priorityBreakdown.urgent || 0, color: 'bg-red-600' },
@@ -367,10 +381,10 @@ export default function HomePage() {
                 return (
                   <div key={priority.label}>
                     <div className="flex justify-between items-center mb-2">
-                      <span className="text-gray-300 font-medium">{priority.label}</span>
-                      <span className="text-sm text-gray-400">{priority.value} tasks ({percentage}%)</span>
+                      <span className="text-gray-700 font-medium">{priority.label}</span>
+                      <span className="text-sm text-gray-600">{priority.value} tasks ({percentage}%)</span>
                     </div>
-                    <div className="w-full bg-gray-700 rounded-full h-3">
+                    <div className="w-full bg-gray-200 rounded-full h-3">
                       <div
                         className={`${priority.color} h-3 rounded-full transition-all duration-500`}
                         style={{ width: `${percentage}%` }}
@@ -383,78 +397,78 @@ export default function HomePage() {
           </div>
         </div>
 
-        <div className="bg-gray-800 rounded-xl p-6 border border-gray-700 mb-8">
-          <h2 className="text-xl font-bold text-white mb-6">
+        <div className="bg-white rounded-xl p-6 border border-gray-200 shadow-sm mb-8">
+          <h2 className="text-xl font-bold text-gray-900 mb-6">
             Current Month Progress ({stats?.currentMonthName || 'Loading...'})
           </h2>
           <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-            <div className="bg-gray-700/50 rounded-lg p-4 text-center">
-              <p className="text-2xl font-bold text-white">{stats?.currentMonthStats.total || 0}</p>
-              <p className="text-sm text-gray-400 mt-1">Total</p>
+            <div className="bg-gray-100 rounded-lg p-4 text-center">
+              <p className="text-2xl font-bold text-gray-900">{stats?.currentMonthStats.total || 0}</p>
+              <p className="text-sm text-gray-600 mt-1">Total</p>
             </div>
-            <div className="bg-green-900/30 rounded-lg p-4 text-center border border-green-600">
-              <p className="text-2xl font-bold text-green-400">{stats?.currentMonthStats.completed || 0}</p>
-              <p className="text-sm text-green-300 mt-1">Done</p>
+            <div className="bg-green-100 rounded-lg p-4 text-center border border-green-300">
+              <p className="text-2xl font-bold text-green-700">{stats?.currentMonthStats.completed || 0}</p>
+              <p className="text-sm text-green-800 mt-1">Done</p>
             </div>
-            <div className="bg-blue-900/30 rounded-lg p-4 text-center border border-blue-600">
-              <p className="text-2xl font-bold text-blue-400">{stats?.currentMonthStats.inProgress || 0}</p>
-              <p className="text-sm text-blue-300 mt-1">In Progress</p>
+            <div className="bg-blue-100 rounded-lg p-4 text-center border border-blue-300">
+              <p className="text-2xl font-bold text-blue-700">{stats?.currentMonthStats.inProgress || 0}</p>
+              <p className="text-sm text-blue-800 mt-1">In Progress</p>
             </div>
-            <div className="bg-yellow-900/30 rounded-lg p-4 text-center border border-yellow-600">
-              <p className="text-2xl font-bold text-yellow-400">{stats?.currentMonthStats.todo || 0}</p>
-              <p className="text-sm text-yellow-300 mt-1">To Do</p>
+            <div className="bg-yellow-100 rounded-lg p-4 text-center border border-yellow-300">
+              <p className="text-2xl font-bold text-yellow-700">{stats?.currentMonthStats.todo || 0}</p>
+              <p className="text-sm text-yellow-800 mt-1">To Do</p>
             </div>
-            <div className="bg-gray-900/50 rounded-lg p-4 text-center border border-gray-600">
-              <p className="text-2xl font-bold text-gray-400">{stats?.currentMonthStats.backlog || 0}</p>
-              <p className="text-sm text-gray-500 mt-1">Backlog</p>
+            <div className="bg-gray-100 rounded-lg p-4 text-center border border-gray-400">
+              <p className="text-2xl font-bold text-gray-700">{stats?.currentMonthStats.backlog || 0}</p>
+              <p className="text-sm text-gray-800 mt-1">Backlog</p>
             </div>
           </div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <div className="bg-gray-800 rounded-xl p-6 border border-gray-700">
+          <div className="bg-white rounded-xl p-6 border border-gray-200 shadow-sm">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-gray-400 text-sm font-medium">Backlog</p>
-                <p className="text-3xl font-bold text-white mt-2">{tasksByStatus.backlog}</p>
+                <p className="text-gray-600 text-sm font-medium">Backlog</p>
+                <p className="text-3xl font-bold text-gray-900 mt-2">{tasksByStatus.backlog}</p>
               </div>
-              <div className="w-12 h-12 rounded-full bg-gray-700 flex items-center justify-center text-2xl">
+              <div className="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center text-2xl">
                 📋
               </div>
             </div>
           </div>
 
-          <div className="bg-gray-800 rounded-xl p-6 border border-gray-700">
+          <div className="bg-white rounded-xl p-6 border border-gray-200 shadow-sm">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-gray-400 text-sm font-medium">To Do</p>
-                <p className="text-3xl font-bold text-white mt-2">{tasksByStatus.todo}</p>
+                <p className="text-gray-600 text-sm font-medium">To Do</p>
+                <p className="text-3xl font-bold text-gray-900 mt-2">{tasksByStatus.todo}</p>
               </div>
-              <div className="w-12 h-12 rounded-full bg-yellow-900/30 flex items-center justify-center text-2xl">
+              <div className="w-12 h-12 rounded-full bg-yellow-200 flex items-center justify-center text-2xl">
                 📝
               </div>
             </div>
           </div>
 
-          <div className="bg-gray-800 rounded-xl p-6 border border-gray-700">
+          <div className="bg-white rounded-xl p-6 border border-gray-200 shadow-sm">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-gray-400 text-sm font-medium">In Progress</p>
-                <p className="text-3xl font-bold text-white mt-2">{tasksByStatus.in_progress}</p>
+                <p className="text-gray-600 text-sm font-medium">In Progress</p>
+                <p className="text-3xl font-bold text-gray-900 mt-2">{tasksByStatus.in_progress}</p>
               </div>
-              <div className="w-12 h-12 rounded-full bg-blue-900/30 flex items-center justify-center text-2xl">
+              <div className="w-12 h-12 rounded-full bg-blue-200 flex items-center justify-center text-2xl">
                 ⚙️
               </div>
             </div>
           </div>
 
-          <div className="bg-gray-800 rounded-xl p-6 border border-gray-700">
+          <div className="bg-white rounded-xl p-6 border border-gray-200 shadow-sm">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-gray-400 text-sm font-medium">Done</p>
-                <p className="text-3xl font-bold text-white mt-2">{tasksByStatus.done}</p>
+                <p className="text-gray-600 text-sm font-medium">Done</p>
+                <p className="text-3xl font-bold text-gray-900 mt-2">{tasksByStatus.done}</p>
               </div>
-              <div className="w-12 h-12 rounded-full bg-green-900/30 flex items-center justify-center text-2xl">
+              <div className="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center text-2xl">
                 ✅
               </div>
             </div>
@@ -463,8 +477,8 @@ export default function HomePage() {
 
         <div className="mb-6">
           <div className="flex items-center gap-4">
-            <span className="text-gray-400 font-medium">Filter by Status:</span>
-            <div className="bg-gray-800 rounded-xl p-2 inline-flex gap-2 border border-gray-700">
+            <span className="text-gray-700 font-medium">Filter by Status:</span>
+            <div className="bg-white rounded-xl p-2 inline-flex gap-2 border border-gray-200 shadow-sm">
               {["all", "backlog", "todo", "in_progress", "done"].map((status) => (
                 <button
                   key={status}
@@ -475,7 +489,7 @@ export default function HomePage() {
                   className={`px-6 py-2 rounded-lg font-medium transition-all ${
                     filter === status
                       ? "bg-blue-600 text-white"
-                      : "text-gray-400 hover:text-white hover:bg-gray-700"
+                      : "text-gray-600 hover:text-gray-900 hover:bg-gray-100"
                   }`}
                 >
                   {status.charAt(0).toUpperCase() + status.slice(1).replace("_", " ")}
@@ -485,13 +499,13 @@ export default function HomePage() {
           </div>
         </div>
 
-        <div className="bg-gray-800 rounded-xl border border-gray-700 overflow-hidden">
-          <div className="p-6 border-b border-gray-700">
+        <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+          <div className="p-6 border-b border-gray-200">
             <div className="flex justify-between items-center">
-              <h2 className="text-xl font-bold text-white">
+              <h2 className="text-xl font-bold text-gray-900">
                 Tasks ({totalTasks} total)
               </h2>
-              <span className="text-sm text-gray-400">
+              <span className="text-sm text-gray-600">
                 Page {currentPage} of {totalPages}
               </span>
             </div>
@@ -499,12 +513,12 @@ export default function HomePage() {
 
           <div style={{ minHeight: '600px' }}>
             {loading ? (
-              <div className="p-8 text-center text-gray-400">
+              <div className="p-8 text-center text-gray-600">
                 <div className="animate-spin h-8 w-8 border-4 border-blue-600 border-t-transparent rounded-full mx-auto"></div>
                 <p className="mt-4">Loading tasks...</p>
               </div>
             ) : tasks.length === 0 ? (
-              <div className="p-8 text-center text-gray-400">
+              <div className="p-8 text-center text-gray-600">
                 <p className="text-lg">No tasks found</p>
                 <p className="text-sm mt-2">
                   {filter !== 'all'
@@ -513,15 +527,16 @@ export default function HomePage() {
                 </p>
               </div>
             ) : (
-              <div className="divide-y divide-gray-700">{tasks.map((task) => (
+              <div className="divide-y divide-gray-200">{tasks.map((task) => (
                 <div
                   key={task._id}
-                  className="p-6 hover:bg-gray-700/50 transition-colors"
+                  onClick={() => router.push(`/task/${task._id}`)}
+                  className="p-6 hover:bg-gray-50 transition-colors cursor-pointer"
                 >
                   <div className="flex items-start justify-between gap-4">
                     <div className="flex-1">
                       <div className="flex items-center gap-3 mb-2 flex-wrap">
-                        <h3 className="text-lg font-semibold text-white">
+                        <h3 className="text-lg font-semibold text-gray-900">
                           {task.title}
                         </h3>
                         <span
@@ -532,14 +547,14 @@ export default function HomePage() {
                           {task.priority}
                         </span>
                         {task.project && (
-                          <span className="px-3 py-1 rounded-lg text-xs font-medium bg-purple-900/30 border border-purple-600 text-purple-400">
+                          <span className="px-3 py-1 rounded-lg text-xs font-medium bg-purple-50 border border-purple-200 text-purple-600">
                             📁 {task.project.name}
                           </span>
                         )}
                       </div>
 
                       {task.description && (
-                        <p className="text-gray-400 text-sm mb-3 line-clamp-2">
+                        <p className="text-gray-600 text-sm mb-3 line-clamp-2">
                           {task.description}
                         </p>
                       )}
@@ -547,8 +562,12 @@ export default function HomePage() {
                       <div className="flex items-center gap-4 text-sm flex-wrap">
                         <select
                           value={task.status}
-                          onChange={(e) => handleStatusChange(task._id, e.target.value)}
-                          className={`px-3 py-1 rounded-lg border cursor-pointer bg-gray-800 ${getStatusColor(
+                          onChange={(e) => {
+                            e.stopPropagation();
+                            handleStatusChange(task._id, e.target.value);
+                          }}
+                          onClick={(e) => e.stopPropagation()}
+                          className={`px-3 py-1 rounded-lg border cursor-pointer font-medium ${getStatusColor(
                             task.status
                           )}`}
                         >
@@ -559,7 +578,7 @@ export default function HomePage() {
                         </select>
 
                         {task.due_date && (
-                          <span className="text-gray-400 flex items-center gap-1">
+                          <span className="text-gray-600 flex items-center gap-1">
                             📅{" "}
                             {new Date(task.due_date).toLocaleDateString("en-US", {
                               month: "short",
@@ -570,24 +589,17 @@ export default function HomePage() {
                         )}
 
                         {task.google_calendar_event_id && (
-                          <span className="text-blue-400 flex items-center gap-1">
+                          <span className="text-blue-600 flex items-center gap-1">
                             🗓️ Synced
                           </span>
                         )}
                       </div>
                     </div>
 
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() => router.push(`/task/${task._id}`)}
-                        className="p-2 rounded-lg bg-blue-900/30 hover:bg-blue-900/50 text-blue-400 transition"
-                        title="View details and comments"
-                      >
-                        💬
-                      </button>
+                    <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
                       <button
                         onClick={() => handleDelete(task._id, task.title)}
-                        className="p-2 rounded-lg bg-red-900/30 hover:bg-red-900/50 text-red-400 transition"
+                        className="p-2 rounded-lg bg-red-50 hover:bg-red-100 text-red-600 transition"
                       >
                         🗑️
                       </button>
@@ -599,12 +611,12 @@ export default function HomePage() {
           )}
           
           {!loading && tasks.length > 0 && totalPages > 1 && (
-            <div className="p-6 border-t border-gray-700">
+            <div className="p-6 border-t border-gray-200">
               <div className="flex justify-center items-center gap-2">
                 <button
                   onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
                   disabled={currentPage === 1}
-                  className="px-4 py-2 rounded-lg bg-gray-700 text-white hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed transition"
+                  className="px-4 py-2 rounded-lg bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition"
                 >
                   ← Previous
                 </button>
@@ -626,7 +638,7 @@ export default function HomePage() {
                           className={`px-4 py-2 rounded-lg font-medium transition ${
                             currentPage === page
                               ? "bg-blue-600 text-white"
-                              : "bg-gray-700 text-gray-300 hover:bg-gray-600"
+                              : "bg-white border border-gray-300 text-gray-700 hover:bg-gray-50"
                           }`}
                         >
                           {page}
@@ -638,7 +650,7 @@ export default function HomePage() {
                 <button
                   onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
                   disabled={currentPage === totalPages}
-                  className="px-4 py-2 rounded-lg bg-gray-700 text-white hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed transition"
+                  className="px-4 py-2 rounded-lg bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition"
                 >
                   Next →
                 </button>

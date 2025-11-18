@@ -40,7 +40,6 @@ Return JSON: {"priority":"urgent|high|medium|low","reasoning":"brief explanation
       suggestions: data.suggestions || [],
     });
   } catch (error) {
-    console.error("AI error:", error);
     return NextResponse.json({ error: "AI analysis failed" }, { status: 500 });
   }
 }

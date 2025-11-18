@@ -34,7 +34,6 @@ export async function POST(request: NextRequest) {
         if (error instanceof ZodError) {
             return NextResponse.json({ error: error.issues[0].message }, { status: 400 });
         }
-        console.error('Project creation error:', error);
         return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
     }
 }
@@ -56,7 +55,6 @@ export async function GET(request: NextRequest) {
         if (error.message === "Not authenticated" || error.message === "Invalid token") {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
-        console.error('Project fetch error:', error);
         return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
     }
 }

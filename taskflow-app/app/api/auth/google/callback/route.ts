@@ -47,11 +47,6 @@ export async function GET(request: NextRequest) {
     // Find or create user
     let user = await User.where("email", profile.email).first();
     
-    console.log("Tokens received:", {
-      hasAccessToken: !!tokens.access_token,
-      hasRefreshToken: !!tokens.refresh_token,
-    });
-    
     if (!user) {
       user = await User.create({
         email: profile.email,
@@ -61,7 +56,6 @@ export async function GET(request: NextRequest) {
         google_access_token: tokens.access_token,
         google_refresh_token: tokens.refresh_token,
       });
-      console.log("New user created with tokens");
     } else {
       // Update using mongoloquent update method
       await User.query()
@@ -73,21 +67,14 @@ export async function GET(request: NextRequest) {
           google_refresh_token: tokens.refresh_token,
         });
       
-      console.log("User tokens updated for:", user.email);
       
       // Refetch to confirm
       user = await User.where("_id", user._id).first();
     }
 
     if (!user) {
-      console.error("User not found after update");
       return NextResponse.redirect(`${url.origin}/login?error=user_not_found`);
     }
-
-    console.log("Final user state:", {
-      email: user.email,
-      hasAccessToken: !!user.google_access_token,
-    });
 
     // Create session
     const token = signToken({ id: user._id, email: user.email, name: user.full_name });
@@ -96,7 +83,6 @@ export async function GET(request: NextRequest) {
     
     return response;
   } catch (error) {
-    console.error("Google auth error:", error);
     const url = new URL(request.url);
     return NextResponse.redirect(`${url.origin}/login?error=server_error`);
   }

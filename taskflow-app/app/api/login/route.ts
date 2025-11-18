@@ -36,7 +36,6 @@ export async function POST(request: NextRequest) {
         if (error instanceof ZodError) {
             return NextResponse.json({ message: error.issues[0].message }, { status: 400 });
         }
-        console.error('Login error:', error);
         return NextResponse.json({ message: 'Internal Server Error' }, { status: 500 });
     }
 }

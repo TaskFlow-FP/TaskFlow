@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import Task from "@/server/Task";
 import User from "@/server/User";
+import TaskUser from "@/server/TaskUser";
 import { getCurrentUser } from "@/helpers/auth";
 import { ObjectId } from "mongodb";
 import { createCalendarEvent, updateCalendarEvent, deleteCalendarEvent } from "@/helpers/googleCalendar";
@@ -34,7 +35,21 @@ export async function POST(
       );
     }
 
-    let eventId: string | undefined = task.google_calendar_event_id || undefined;
+    // Get or create task_user relation
+    let taskUser = await TaskUser.query()
+      .where('taskId', taskId)
+      .where('userId', new ObjectId(currentUser.id))
+      .first();
+
+    if (!taskUser) {
+      // Create task_user relation if not exists
+      taskUser = await TaskUser.create({
+        taskId: taskId,
+        userId: new ObjectId(currentUser.id),
+      });
+    }
+
+    let eventId: string | undefined = taskUser.google_calendar_event_id || undefined;
 
     if (eventId) {
       // Update existing event
@@ -54,9 +69,13 @@ export async function POST(
         new Date(task.due_date)
       );
 
-      await Task.query().where("_id", taskId).update({
-        google_calendar_event_id: eventId,
-      });
+      // Save event ID to task_user relation (not task)
+      await TaskUser.query()
+        .where('taskId', taskId)
+        .where('userId', new ObjectId(currentUser.id))
+        .update({
+          google_calendar_event_id: eventId,
+        });
     }
 
     return NextResponse.json({
@@ -109,9 +128,15 @@ export async function DELETE(
       return NextResponse.json({ error: "Task not found" }, { status: 404 });
     }
 
-    if (!task.google_calendar_event_id) {
+    // Get task_user relation for current user
+    const taskUser = await TaskUser.query()
+      .where('taskId', taskId)
+      .where('userId', new ObjectId(currentUser.id))
+      .first();
+
+    if (!taskUser || !taskUser.google_calendar_event_id) {
       return NextResponse.json(
-        { error: "Task is not synced with calendar" },
+        { error: "Task is not synced with your calendar" },
         { status: 400 }
       );
     }
@@ -124,11 +149,15 @@ export async function DELETE(
       );
     }
 
-    await deleteCalendarEvent(user.google_access_token, task.google_calendar_event_id);
+    await deleteCalendarEvent(user.google_access_token, taskUser.google_calendar_event_id);
 
-    await Task.query().where("_id", taskId).update({
-      google_calendar_event_id: undefined,
-    });
+    // Remove event ID from task_user relation
+    await TaskUser.query()
+      .where('taskId', taskId)
+      .where('userId', new ObjectId(currentUser.id))
+      .update({
+        google_calendar_event_id: undefined,
+      });
 
     return NextResponse.json({
       message: "Calendar sync removed",

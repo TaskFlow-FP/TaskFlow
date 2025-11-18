@@ -16,7 +16,7 @@ export default function CreateProjectModal({ onClose }: { onClose: () => void })
         setError(null)
 
         try {
-            const resp = await fetch('http://localhost:3000/projects', {
+            const resp = await fetch('/api/projects', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ name, description }),

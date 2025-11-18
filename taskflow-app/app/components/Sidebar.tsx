@@ -2,14 +2,60 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Swal from "sweetalert2";
-import { LayoutDashboard, FolderKanban, PlusCircle, LogOut, Menu, X } from "lucide-react";
+import { LayoutDashboard, FolderKanban, PlusCircle, LogOut, Menu, X, Bell } from "lucide-react";
 
 export default function Sidebar() {
   const pathname = usePathname();
   const router = useRouter();
   const [isOpen, setIsOpen] = useState(true);
+  const [pendingInvitations, setPendingInvitations] = useState(0);
+  const [hasGoogleAccount, setHasGoogleAccount] = useState<boolean | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const initializeSidebar = async () => {
+      await checkUserAccount();
+      await fetchPendingInvitations();
+      setIsLoading(false);
+    };
+    
+    initializeSidebar();
+    
+    // Refresh invitations every 30 seconds (only if not Google user)
+    const interval = setInterval(() => {
+      if (hasGoogleAccount === false) {
+        fetchPendingInvitations();
+      }
+    }, 30000);
+    
+    return () => clearInterval(interval);
+  }, [hasGoogleAccount]);
+
+  const checkUserAccount = async () => {
+    try {
+      const res = await fetch('/api/users/me');
+      const data = await res.json();
+      if (res.ok && data.user) {
+        const isGoogleUser = !!data.user.google_id;
+        setHasGoogleAccount(isGoogleUser);
+      }
+    } catch (error) {
+      setHasGoogleAccount(false);
+    }
+  };
+
+  const fetchPendingInvitations = async () => {
+    try {
+      const res = await fetch('/api/invitations/pending');
+      const data = await res.json();
+      if (res.ok) {
+        setPendingInvitations(data.invitations?.length || 0);
+      }
+    } catch (error) {
+    }
+  };
 
   const handleLogout = async () => {
     const result = await Swal.fire({
@@ -49,11 +95,23 @@ export default function Sidebar() {
     }
   };
 
-  const navItems = [
+  type NavItem = {
+    name: string;
+    path: string;
+    icon: any;
+    badge?: number;
+  };
+
+  const navItems: NavItem[] = [
     { name: "Dashboard", path: "/", icon: LayoutDashboard },
     { name: "Projects", path: "/project", icon: FolderKanban },
     { name: "Create Task", path: "/create-task", icon: PlusCircle },
   ];
+
+  // Only show Invitations menu for non-Google users
+  if (!isLoading && hasGoogleAccount === false) {
+    navItems.push({ name: "Invitations", path: "/invitations", icon: Bell, badge: pendingInvitations });
+  }
 
   return (
     <aside
@@ -83,7 +141,7 @@ export default function Sidebar() {
                 <Link
                   key={item.path}
                   href={item.path}
-                  className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${
+                  className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all relative ${
                     pathname === item.path
                       ? "bg-blue-500 text-white shadow-lg shadow-blue-500/30"
                       : "text-gray-700 hover:bg-gray-100"
@@ -91,6 +149,15 @@ export default function Sidebar() {
                 >
                   <Icon className="w-5 h-5" />
                   {isOpen && <span className="font-medium">{item.name}</span>}
+                  {item.badge !== undefined && item.badge > 0 && (
+                    <span className={`ml-auto text-xs font-bold px-2 py-1 rounded-full ${
+                      pathname === item.path
+                        ? "bg-white text-blue-500"
+                        : "bg-red-500 text-white"
+                    }`}>
+                      {item.badge}
+                    </span>
+                  )}
                 </Link>
               );
             })}

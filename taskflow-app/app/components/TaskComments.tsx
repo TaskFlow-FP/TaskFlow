@@ -42,7 +42,6 @@ export default function TaskComments({ taskId, isExpanded, currentUserId }: Task
         setComments(data.comments || []);
       }
     } catch (error) {
-      console.error("Failed to fetch comments:", error);
     }
     setLoading(false);
   };
@@ -77,7 +76,6 @@ export default function TaskComments({ taskId, isExpanded, currentUserId }: Task
         alert(data.error || "Failed to post comment");
       }
     } catch (error) {
-      console.error("Failed to post comment:", error);
       alert("Failed to post comment");
     }
     setSubmitting(false);
@@ -102,7 +100,6 @@ export default function TaskComments({ taskId, isExpanded, currentUserId }: Task
         alert(data.error || "Failed to update comment");
       }
     } catch (error) {
-      console.error("Failed to update comment:", error);
       alert("Failed to update comment");
     }
   };
@@ -122,7 +119,6 @@ export default function TaskComments({ taskId, isExpanded, currentUserId }: Task
         alert(data.error || "Failed to delete comment");
       }
     } catch (error) {
-      console.error("Failed to delete comment:", error);
       alert("Failed to delete comment");
     }
   };

@@ -6,6 +6,7 @@ import Task from "./Task";
 interface ITaskUser extends IMongoloquentSchema, IMongoloquentTimestamps {
   userId: ObjectId;
   taskId: ObjectId;
+  google_calendar_event_id?: string;
 }
 
 export default class TaskUser extends Model<ITaskUser> {

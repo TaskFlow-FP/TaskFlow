@@ -35,14 +35,12 @@ async function getProjects(): Promise<ProjectType[]> {
         }) 
 
         if (!resp.ok) {
-            console.error("Failed to fetch projects:", await resp.text());
             return [];
         }
 
         const data = await resp.json();
         return data.projects || [];
     } catch (error) {
-        console.error("Error in getProjects:", error);
         return [];
     }
 }

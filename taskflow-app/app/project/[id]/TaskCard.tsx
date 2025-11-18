@@ -8,11 +8,11 @@ import { Calendar, Clock } from "lucide-react";
 
 const getPriorityColor = (priority: string) => {
   switch (priority) {
-    case 'urgent': return { bg: 'bg-red-100', text: 'text-red-800', label: 'Urgent' };
-    case 'high': return { bg: 'bg-orange-100', text: 'text-orange-800', label: 'High Priority' };
-    case 'medium': return { bg: 'bg-blue-100', text: 'text-blue-800', label: 'Medium' };
-    case 'low': return { bg: 'bg-green-100', text: 'text-green-800', label: 'Low Priority' };
-    default: return { bg: 'bg-gray-100', text: 'text-gray-800', label: 'Normal' };
+    case 'urgent': return { bg: 'bg-red-700', text: 'text-white', label: 'Urgent' };
+    case 'high': return { bg: 'bg-orange-700', text: 'text-white', label: 'High Priority' };
+    case 'medium': return { bg: 'bg-blue-700', text: 'text-white', label: 'Medium' };
+    case 'low': return { bg: 'bg-green-700', text: 'text-white', label: 'Low Priority' };
+    default: return { bg: 'bg-gray-700', text: 'text-white', label: 'Normal' };
   }
 };
 
@@ -84,7 +84,7 @@ export default function TaskCard({ task }: { task: ITask }) {
                         {priorityStyle.label}
                     </span>
                     {task.google_calendar_event_id && (
-                        <span className="inline-block px-3 py-1 rounded text-[11px] font-medium bg-blue-100 text-blue-800">
+                        <span className="inline-block px-3 py-1 rounded text-[11px] font-medium bg-blue-700 text-white">
                             Synced
                         </span>
                     )}

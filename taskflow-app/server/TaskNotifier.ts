@@ -1,9 +1,11 @@
 type EventData = {
-  type: 'task_created' | 'task_updated' | 'task_deleted' | 'comment_created' | 'comment_updated' | 'comment_deleted';
+  type: 'task_created' | 'task_updated' | 'task_deleted' | 'comment_created' | 'comment_updated' | 'comment_deleted' | 'member_joined' | 'member_updated';
   taskId?: string;
   task?: any;
   commentId?: string;
   comment?: any;
+  projectId?: string;
+  member?: any;
   timestamp: string;
 };
 
@@ -31,7 +33,7 @@ class TaskNotifier {
   }
 
   broadcast(data: EventData) {
-    this.connections.forEach((callback) => {
+    this.connections.forEach((callback, connectionId) => {
       try {
         callback(data);
       } catch (error) {
@@ -76,6 +78,7 @@ class TaskNotifier {
   notifyCommentUpdated(commentId: string, comment: any) {
     this.broadcast({
       type: 'comment_updated',
+      taskId: comment.taskId?.toString(),
       commentId,
       comment,
       timestamp: new Date().toISOString()
@@ -87,6 +90,24 @@ class TaskNotifier {
       type: 'comment_deleted',
       commentId,
       taskId,
+      timestamp: new Date().toISOString()
+    });
+  }
+
+  notifyMemberJoined(projectId: string, member: any) {
+    this.broadcast({
+      type: 'member_joined',
+      projectId,
+      member,
+      timestamp: new Date().toISOString()
+    });
+  }
+
+  notifyMemberUpdated(projectId: string, member: any) {
+    this.broadcast({
+      type: 'member_updated',
+      projectId,
+      member,
       timestamp: new Date().toISOString()
     });
   }

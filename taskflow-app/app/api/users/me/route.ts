@@ -10,11 +10,14 @@ export async function GET(req: NextRequest) {
     const user = await User.where("_id", new ObjectId(currentUser.id)).first();
     
     return NextResponse.json({
-      id: currentUser.id,
-      email: currentUser.email,
-      name: currentUser.name,
-      hasGoogleCalendar: !!user?.google_access_token,
-      isGoogleUser: user?.password === "google-oauth",
+      user: {
+        id: currentUser.id,
+        email: currentUser.email,
+        name: currentUser.name,
+        google_id: user?.google_id,
+        hasGoogleCalendar: !!user?.google_access_token,
+        isGoogleUser: !!user?.google_id,
+      }
     });
   } catch (error: any) {
     return NextResponse.json(

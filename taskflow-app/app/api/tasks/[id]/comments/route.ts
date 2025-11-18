@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import Comment from "@/server/Comment";
 import Task from "@/server/Task";
 import Project from "@/server/Project";
+import Member from "@/server/Member";
+import User from "@/server/User";
 import TaskNotifier from "@/server/TaskNotifier";
 import { commentCreateSchema } from "@/server/schemas/commentSchema";
 import { ObjectId } from "mongodb";
@@ -34,9 +36,7 @@ export async function GET(
     // Populate user information for each comment
     const commentsWithUsers = await Promise.all(
       rawComments.map(async (comment) => {
-        const commentInstance = new Comment();
-        Object.assign(commentInstance, comment);
-        const user = await commentInstance.user().first();
+        const user = await User.where('_id', comment.userId).first();
         return {
           _id: comment._id,
           taskId: comment.taskId,
@@ -102,14 +102,26 @@ export async function POST(
       return NextResponse.json({ error: "Project not found" }, { status: 404 });
     }
 
-    const project = new Project();
-    Object.assign(project, projectData);
+    console.log('[Comment Auth] Checking authorization for user:', userId);
+    console.log('[Comment Auth] Project ID:', task.projectId.toString());
+
+    // Query members directly instead of using relations
+    const members = await Member.where('projectId', task.projectId).get();
     
-    const members = await project.members().get();
+    console.log('[Comment Auth] Project members:', members.map((m: any) => ({
+      userId: m.userId?.toString(),
+      status: m.invitation_status,
+      role: m.role
+    })));
+    
     const isMember = members.some(
-      (member: any) => member._id.toString() === userId.toString()
+      (member: any) => 
+        member.userId?.toString() === userId.toString() && 
+        member.invitation_status === 'accepted'
     );
-    const isOwner = project.ownerId.toString() === userId.toString();
+    const isOwner = projectData.ownerId.toString() === userId.toString();
+
+    console.log('[Comment Auth] isMember:', isMember, 'isOwner:', isOwner);
 
     if (!isMember && !isOwner) {
       return NextResponse.json(
@@ -126,9 +138,7 @@ export async function POST(
     });
 
     // Get user info for response
-    const comment = new Comment();
-    Object.assign(comment, commentData);
-    const user = await comment.user().first();
+    const user = await User.where('_id', new ObjectId(userId)).first();
     const commentWithUser = {
       _id: commentData._id,
       taskId: commentData.taskId,
@@ -145,7 +155,14 @@ export async function POST(
 
     // Notify via SSE
     const notifier = TaskNotifier.getInstance();
-    notifier.notifyCommentCreated(validated.taskId, commentWithUser);
+    const taskIdString = commentData.taskId.toString();
+    console.log('[SSE] Notifying comment created:', {
+      taskId: taskIdString,
+      commentId: commentData._id.toString(),
+      user: user?.full_name,
+      connectionCount: notifier.getConnectionCount()
+    });
+    notifier.notifyCommentCreated(taskIdString, commentWithUser);
 
     return NextResponse.json(
       { message: "Comment created successfully", comment: commentWithUser },

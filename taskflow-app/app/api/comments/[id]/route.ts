@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import Comment from "@/server/Comment";
+import User from "@/server/User";
 import TaskNotifier from "@/server/TaskNotifier";
 import { commentUpdateSchema } from "@/server/schemas/commentSchema";
 import { ObjectId } from "mongodb";
@@ -54,9 +55,7 @@ export async function PATCH(
     const updatedCommentData = await Comment.where('_id', new ObjectId(commentId)).first();
     
     // Get user info for response
-    const comment = new Comment();
-    Object.assign(comment, updatedCommentData);
-    const user = await comment.user().first();
+    const user = await User.where('_id', updatedCommentData!.userId).first();
     
     const commentWithUser = {
       _id: updatedCommentData!._id,
@@ -74,6 +73,13 @@ export async function PATCH(
 
     // Notify via SSE
     const notifier = TaskNotifier.getInstance();
+    const taskIdString = commentWithUser.taskId.toString();
+    console.log('[SSE] Notifying comment updated:', {
+      taskId: taskIdString,
+      commentId,
+      user: user?.full_name,
+      connectionCount: notifier.getConnectionCount()
+    });
     notifier.notifyCommentUpdated(commentId, commentWithUser);
 
     return NextResponse.json(
@@ -137,6 +143,11 @@ export async function DELETE(
 
     // Notify via SSE
     const notifier = TaskNotifier.getInstance();
+    console.log('[SSE] Notifying comment deleted:', {
+      taskId: taskIdForNotification,
+      commentId,
+      connectionCount: notifier.getConnectionCount()
+    });
     notifier.notifyCommentDeleted(commentId, taskIdForNotification);
 
     return NextResponse.json(

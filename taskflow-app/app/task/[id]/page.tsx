@@ -60,6 +60,7 @@ export default function TaskDetailPage() {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [syncing, setSyncing] = useState(false);
+  const [isCalendarSynced, setIsCalendarSynced] = useState(false);
   const commentsEndRef = useRef<HTMLDivElement>(null);
 
   const fetchTask = async () => {
@@ -100,7 +101,6 @@ export default function TaskDetailPage() {
         }).then(() => router.push("/login"));
       }
     } catch (error) {
-      console.error("Failed to fetch task:", error);
       Swal.fire({
         icon: "error",
         title: "Error",
@@ -114,10 +114,16 @@ export default function TaskDetailPage() {
       const res = await fetch(`/api/tasks/${taskId}/comments`);
       const data = await res.json();
       if (res.ok) {
+        
+        // Check for duplicates in fetched data
+        const ids = data.comments?.map((c: Comment) => c._id) || [];
+        const uniqueIds = new Set(ids);
+        if (ids.length !== uniqueIds.size) {
+        }
+        
         setComments(data.comments || []);
       }
     } catch (error) {
-      console.error("Failed to fetch comments:", error);
     }
   };
 
@@ -126,8 +132,19 @@ export default function TaskDetailPage() {
       const res = await fetch("/api/users/me");
       const data = await res.json();
       if (res.ok) {
-        console.log("Current user data:", data);
-        setCurrentUser(data);
+        // Extract user object from response
+        setCurrentUser(data.user || data);
+      }
+    } catch (error) {
+    }
+  };
+
+  const fetchCalendarSyncStatus = async () => {
+    try {
+      const res = await fetch(`/api/tasks/${taskId}/calendar/status`);
+      const data = await res.json();
+      if (res.ok) {
+        setIsCalendarSynced(data.isSynced || false);
       }
     } catch (error) {
     }
@@ -135,7 +152,7 @@ export default function TaskDetailPage() {
 
   const initializePage = async () => {
     setLoading(true);
-    await Promise.all([fetchTask(), fetchComments(), fetchCurrentUser()]);
+    await Promise.all([fetchTask(), fetchComments(), fetchCurrentUser(), fetchCalendarSyncStatus()]);
     setLoading(false);
   };
 
@@ -155,38 +172,96 @@ export default function TaskDetailPage() {
 
   // SSE for realtime updates
   useEffect(() => {
-    const eventSource = new EventSource("/api/tasks/stream");
+    let eventSource: EventSource | null = null;
+    let reconnectTimeout: NodeJS.Timeout | null = null;
+    let isIntentionallyClosed = false;
 
-    eventSource.onmessage = (event) => {
+    const connectSSE = () => {
       try {
-        const data = JSON.parse(event.data);
+        eventSource = new EventSource("/api/tasks/stream");
 
-        if (data.type === "comment_created" && data.taskId === taskId) {
-          setComments((prev) => {
-            if (prev.some((c) => c._id === data.comment._id)) return prev;
-            return [...prev, data.comment];
-          });
-          setTimeout(scrollToBottom, 100);
-        } else if (data.type === "comment_updated") {
-          setComments((prev) =>
-            prev.map((c) => (c._id === data.commentId ? data.comment : c))
-          );
-        } else if (data.type === "comment_deleted" && data.taskId === taskId) {
-          setComments((prev) => prev.filter((c) => c._id !== data.commentId));
-        } else if (data.type === "task_updated" && data.taskId === taskId) {
-          fetchTask();
-        } else if (data.type === "task_deleted" && data.taskId === taskId) {
-          Swal.fire({
-            icon: "info",
-            title: "Task Deleted",
-            text: "This task has been deleted",
-          }).then(() => router.push("/"));
-        }
-      } catch (error) {}
+        eventSource.onopen = () => {
+        };
+
+        eventSource.onmessage = (event) => {
+          try {
+            const data = JSON.parse(event.data);
+            
+            // Skip logging for ping events (heartbeat) but don't return early
+            const shouldLog = data.type !== 'ping' && data.type !== 'connected';
+            
+            if (data.type === "comment_created" && data.taskId === taskId) {
+              setComments((prev) => {
+                
+                // Check if comment already exists by real _id
+                if (prev.some((c) => c._id === data.comment._id)) {
+                  return prev;
+                }
+                
+                // Check if this is our own comment (replace optimistic)
+                const tempComment = prev.find((c) => 
+                  c._id.startsWith('temp-') && 
+                  c.userId === data.comment.userId && 
+                  c.content === data.comment.content
+                );
+                
+                if (tempComment) {
+                  const newComments = prev.map((c) => c._id === tempComment._id ? data.comment : c);
+                  return newComments;
+                }
+                
+                // Add new comment from other users
+                const newComments = [...prev, data.comment];
+                return newComments;
+              });
+              setTimeout(scrollToBottom, 100);
+            } else if (data.type === "comment_updated" && data.taskId === taskId) {
+              setComments((prev) =>
+                prev.map((c) => (c._id === data.commentId ? data.comment : c))
+              );
+            } else if (data.type === "comment_deleted" && data.taskId === taskId) {
+              setComments((prev) => prev.filter((c) => c._id !== data.commentId));
+            } else if (data.type === "task_updated" && data.taskId === taskId) {
+              fetchTask();
+            } else if (data.type === "task_deleted" && data.taskId === taskId) {
+              Swal.fire({
+                icon: "info",
+                title: "Task Deleted",
+                text: "This task has been deleted",
+              }).then(() => router.push("/"));
+            }
+          } catch (error) {
+          }
+        };
+
+        eventSource.onerror = (error) => {
+          if (eventSource) {
+            eventSource.close();
+          }
+          
+          // Auto-reconnect after 3 seconds if not intentionally closed
+          if (!isIntentionallyClosed) {
+            reconnectTimeout = setTimeout(() => {
+              connectSSE();
+            }, 3000);
+          }
+        };
+      } catch (error) {
+      }
     };
 
+    // Initial connection
+    connectSSE();
+
+    // Cleanup
     return () => {
-      eventSource.close();
+      isIntentionallyClosed = true;
+      if (reconnectTimeout) {
+        clearTimeout(reconnectTimeout);
+      }
+      if (eventSource) {
+        eventSource.close();
+      }
     };
   }, [taskId]);
 
@@ -194,22 +269,64 @@ export default function TaskDetailPage() {
     commentsEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
-  const handleSubmitComment = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newComment.trim()) return;
+  const handleSubmitComment = async (e?: React.FormEvent | React.KeyboardEvent) => {
+    if (e) {
+      e.preventDefault();
+    }
+    
+    if (!newComment.trim()) {
+      return;
+    }
 
+    // Create optimistic comment (temporary ID)
+    const optimisticComment: Comment = {
+      _id: `temp-${Date.now()}`,
+      taskId: taskId,
+      userId: currentUser?.id || "",
+      content: newComment,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      user: currentUser ? {
+        _id: currentUser.id,
+        full_name: currentUser.name,
+        email: currentUser.email,
+      } : null,
+    };
+    
+    // Add comment to UI immediately (optimistic update)
+    setComments((prev) => [...prev, optimisticComment]);
+    
+    // Clear input and scroll
+    const commentContent = newComment;
+    setNewComment("");
+    setTimeout(scrollToBottom, 100);
+    
     setSubmitting(true);
+    
     try {
       const res = await fetch(`/api/tasks/${taskId}/comments`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ content: newComment }),
+        body: JSON.stringify({ content: commentContent }),
       });
 
       if (res.ok) {
-        setNewComment("");
+        const data = await res.json();
+        
+        // Replace optimistic comment with real one from server
+        setComments((prev) => {
+          const newComments = prev.map((c) => (c._id === optimisticComment._id ? data.comment : c));
+          return newComments;
+        });
       } else {
         const data = await res.json();
+        
+        // Remove optimistic comment on failure
+        setComments((prev) => prev.filter((c) => c._id !== optimisticComment._id));
+        
+        // Restore the comment text
+        setNewComment(commentContent);
+        
         Swal.fire({
           icon: "error",
           title: "Failed to Post Comment",
@@ -217,17 +334,36 @@ export default function TaskDetailPage() {
         });
       }
     } catch (error) {
+      
+      // Remove optimistic comment on error
+      setComments((prev) => prev.filter((c) => c._id !== optimisticComment._id));
+      
+      // Restore the comment text
+      setNewComment(commentContent);
+      
       Swal.fire({
         icon: "error",
         title: "Error",
         text: "Failed to post comment",
       });
     }
+    
     setSubmitting(false);
   };
 
   const handleEditComment = async (commentId: string) => {
     if (!editContent.trim()) return;
+
+    // Check if this is an optimistic comment (still being submitted)
+    if (commentId.startsWith('temp-')) {
+      Swal.fire({
+        icon: "info",
+        title: "Please Wait",
+        text: "Comment is still being posted. Please try again in a moment.",
+        timer: 2000,
+      });
+      return;
+    }
 
     try {
       const res = await fetch(`/api/comments/${commentId}`, {
@@ -239,6 +375,17 @@ export default function TaskDetailPage() {
       if (res.ok) {
         setEditingId(null);
         setEditContent("");
+      } else if (res.status === 404) {
+        // Comment was deleted by someone else
+        setComments((prev) => prev.filter((c) => c._id !== commentId));
+        setEditingId(null);
+        setEditContent("");
+        Swal.fire({
+          icon: "info",
+          title: "Comment Not Found",
+          text: "This comment has been deleted.",
+          timer: 2000,
+        });
       } else {
         const data = await res.json();
         Swal.fire({
@@ -257,6 +404,17 @@ export default function TaskDetailPage() {
   };
 
   const handleDeleteComment = async (commentId: string) => {
+    // Check if this is an optimistic comment (still being submitted)
+    if (commentId.startsWith('temp-')) {
+      Swal.fire({
+        icon: "info",
+        title: "Please Wait",
+        text: "Comment is still being posted. Please try again in a moment.",
+        timer: 2000,
+      });
+      return;
+    }
+
     const result = await Swal.fire({
       title: "Delete Comment",
       text: "Are you sure you want to delete this comment?",
@@ -273,7 +431,12 @@ export default function TaskDetailPage() {
           method: "DELETE",
         });
 
-        if (!res.ok) {
+        if (res.ok) {
+          // Comment will be removed via SSE or is already removed
+        } else if (res.status === 404) {
+          // Comment was already deleted, just remove from UI
+          setComments((prev) => prev.filter((c) => c._id !== commentId));
+        } else {
           const data = await res.json();
           Swal.fire({
             icon: "error",
@@ -313,6 +476,7 @@ export default function TaskDetailPage() {
       if (res.ok) {
         Swal.fire('Success', 'Task synced to Google Calendar!', 'success');
         await fetchTask();
+        await fetchCalendarSyncStatus();
       } else if (res.status === 403) {
         // Calendar API not enabled
         Swal.fire({
@@ -393,6 +557,7 @@ export default function TaskDetailPage() {
       if (res.ok) {
         Swal.fire('Success', 'Calendar sync removed', 'success');
         await fetchTask();
+        await fetchCalendarSyncStatus();
       } else {
         Swal.fire('Error', data.error || 'Failed to remove calendar sync', 'error');
       }
@@ -405,34 +570,35 @@ export default function TaskDetailPage() {
   const getStatusColor = (status: string) => {
     switch (status) {
       case "done":
-        return "bg-green-600 text-white";
+        return "bg-green-700 text-white";
       case "in_progress":
-        return "bg-blue-600 text-white";
+        return "bg-blue-700 text-white";
       case "todo":
         return "bg-yellow-600 text-white";
       case "backlog":
-        return "bg-gray-600 text-white";
+        return "bg-gray-700 text-white";
       default:
-        return "bg-gray-600 text-white";
+        return "bg-gray-700 text-white";
     }
   };
 
   const getPriorityColor = (priority: string) => {
     switch (priority) {
       case "urgent":
-        return "bg-red-600 text-white";
+        return "bg-red-700 text-white";
       case "high":
-        return "bg-orange-600 text-white";
+        return "bg-orange-700 text-white";
       case "medium":
-        return "bg-yellow-600 text-white";
+        return "bg-yellow-700 text-white";
       case "low":
-        return "bg-green-600 text-white";
+        return "bg-green-700 text-white";
       default:
-        return "bg-gray-600 text-white";
+        return "bg-gray-700 text-white";
     }
   };
 
-  const getInitials = (name: string) => {
+  const getInitials = (name: string | undefined) => {
+    if (!name) return "??"; // Default initials if name is undefined
     return name
       .split(" ")
       .map((n) => n[0])
@@ -441,7 +607,7 @@ export default function TaskDetailPage() {
       .slice(0, 2);
   };
 
-  const getAvatarColor = (userId: string) => {
+  const getAvatarColor = (userId: string | undefined) => {
     const colors = [
       "bg-red-500",
       "bg-blue-500",
@@ -452,6 +618,7 @@ export default function TaskDetailPage() {
       "bg-indigo-500",
       "bg-teal-500",
     ];
+    if (!userId) return colors[0]; // Default color if userId is undefined
     const index = userId.split("").reduce((acc, char) => acc + char.charCodeAt(0), 0);
     return colors[index % colors.length];
   };
@@ -572,7 +739,7 @@ export default function TaskDetailPage() {
               </div>
               
               {/* Already Synced */}
-              {task.google_calendar_event_id ? (
+              {isCalendarSynced ? (
                 <div className="bg-green-50 border border-green-200 rounded-lg p-4">
                   <p className="text-green-600 font-medium mb-3 flex items-center gap-2">
                     <span className="text-xl">✅</span>
@@ -649,18 +816,45 @@ export default function TaskDetailPage() {
                 <p className="text-gray-500 text-sm">Be the first to share your thoughts!</p>
               </div>
             ) : (
-              comments.map((comment) => {
-                // Convert both IDs to string for reliable comparison
-                const currentUserIdStr = currentUser?.id?.toString();
-                const commentUserIdStr = comment.userId?.toString();
-                const isOwner = currentUserIdStr && commentUserIdStr && currentUserIdStr === commentUserIdStr;
-                const userName = isOwner ? "You" : (comment.user?.full_name || "Unknown User");
-                const initials = comment.user?.full_name
-                  ? getInitials(comment.user.full_name)
-                  : "?";
-                const avatarColor = getAvatarColor(comment.userId);
+              <>
+                {(() => {
+                  // Deduplicate comments by _id to prevent React key errors
+                  const uniqueComments = Array.from(
+                    new Map(comments.map(c => [c._id, c])).values()
+                  );
+                  
+                  // Log if we found duplicates
+                  if (uniqueComments.length !== comments.length) {
+                    console.warn(`[Comments] Filtered out ${comments.length - uniqueComments.length} duplicate comments`);
+                  }
+                  
+                  return uniqueComments.map((comment) => {
+                    // Convert both IDs to string for reliable comparison
+                    const currentUserIdStr = currentUser?.id?.toString();
+                    const commentUserIdStr = comment.userId?.toString();
+                    const isOwner = currentUserIdStr && commentUserIdStr && currentUserIdStr === commentUserIdStr;
+                    
+                    // Debug logging for ownership check
+                    if (comment._id && !comment._id.startsWith('temp-')) {
+                    }
+                    
+                    // Get user name with multiple fallbacks
+                    let userName = "Unknown User";
+                    if (isOwner) {
+                      userName = "You";
+                    } else if (comment.user) {
+                      userName = comment.user.full_name || comment.user.email?.split('@')[0] || "Unknown User";
+                    }
+                    
+                    const initials = comment.user?.full_name
+                      ? getInitials(comment.user.full_name)
+                      : comment.user?.email 
+                        ? comment.user.email.charAt(0).toUpperCase()
+                        : "??";
+                    const avatarColor = getAvatarColor(comment.userId);
+                    const isOptimistic = comment._id.startsWith('temp-');
 
-                return (
+                    return (
                   <div
                     key={comment._id}
                     className={`flex gap-4 p-4 rounded-lg ${
@@ -685,6 +879,11 @@ export default function TaskDetailPage() {
                                 Your comment
                               </span>
                             )}
+                            {isOptimistic && (
+                              <span className="ml-2 text-xs bg-yellow-500 text-white px-2 py-1 rounded">
+                                Posting...
+                              </span>
+                            )}
                           </p>
                           <p className="text-xs text-gray-600">
                             {new Date(comment.createdAt).toLocaleString("en-US", {
@@ -698,7 +897,7 @@ export default function TaskDetailPage() {
                           </p>
                         </div>
 
-                        {isOwner && (
+                        {isOwner && !isOptimistic && (
                           <div className="flex gap-2">
                             {editingId === comment._id ? (
                               <>
@@ -748,7 +947,9 @@ export default function TaskDetailPage() {
                     </div>
                   </div>
                 );
-              })
+              });
+            })()}
+            </>
             )}
             <div ref={commentsEndRef} />
           </div>
@@ -770,22 +971,25 @@ export default function TaskDetailPage() {
                 <textarea
                   value={newComment}
                   onChange={(e) => setNewComment(e.target.value)}
-                  placeholder="Write a comment..."
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                      e.preventDefault();
+                      if (newComment.trim() && !submitting) {
+                        handleSubmitComment(e);
+                      } else if (!newComment.trim()) {
+                      } else if (submitting) {
+                      }
+                    }
+                  }}
+                  placeholder="Write a comment... (Press Enter to send, Shift+Enter for new line)"
                   className="w-full bg-white text-gray-900 rounded-lg p-4 border border-gray-300 focus:border-indigo-500 focus:outline-none resize-none"
                   rows={3}
                   disabled={submitting}
                 />
-                <div className="flex justify-between items-center mt-3">
-                  <p className="text-sm text-gray-600">
-                    {currentUser ? `Posting as ${currentUser.name}` : "Please login to comment"}
+                <div className="flex justify-end items-center mt-3">
+                  <p className="text-sm text-gray-500">
+                    {submitting ? "Posting..." : "Press Enter to send, Shift+Enter for new line"}
                   </p>
-                  <button
-                    type="submit"
-                    disabled={submitting || !newComment.trim()}
-                    className="bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-medium px-6 py-3 rounded-lg transition-colors shadow-sm"
-                  >
-                    {submitting ? "Posting..." : "Post Comment"}
-                  </button>
                 </div>
               </div>
             </div>
