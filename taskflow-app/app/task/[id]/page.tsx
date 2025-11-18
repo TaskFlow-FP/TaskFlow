@@ -461,8 +461,8 @@ export default function TaskDetailPage() {
       <SidebarLayout>
         <div className="flex items-center justify-center min-h-screen">
           <div className="text-center">
-            <div className="animate-spin h-12 w-12 border-4 border-blue-600 border-t-transparent rounded-full mx-auto"></div>
-            <p className="mt-4 text-gray-400">Loading task details...</p>
+            <div className="animate-spin h-12 w-12 border-4 border-indigo-600 border-t-transparent rounded-full mx-auto"></div>
+            <p className="mt-4 text-gray-600">Loading task details...</p>
           </div>
         </div>
       </SidebarLayout>
@@ -473,7 +473,7 @@ export default function TaskDetailPage() {
     return (
       <SidebarLayout>
         <div className="flex items-center justify-center min-h-screen">
-          <div className="text-center text-gray-400">
+          <div className="text-center text-gray-600">
             <p className="text-xl">Task not found</p>
           </div>
         </div>
@@ -488,31 +488,31 @@ export default function TaskDetailPage() {
         <div className="mb-6">
           <button
             onClick={() => router.push("/")}
-            className="flex items-center gap-2 text-gray-400 hover:text-white transition mb-4"
+            className="flex items-center gap-2 text-gray-600 hover:text-gray-900 transition mb-4"
           >
             <span className="text-xl">←</span>
             <span>Back to Dashboard</span>
           </button>
           {task.project && (
             <div className="mb-2">
-              <span className="text-sm font-medium text-gray-400 uppercase tracking-wider">
+              <span className="text-sm font-medium text-gray-600 uppercase tracking-wider">
                 Project
               </span>
-              <h2 className="text-2xl font-bold text-blue-400 mt-1">
+              <h2 className="text-xl font-semibold text-indigo-600 mt-1">
                 {task.project.name}
               </h2>
             </div>
           )}
-          <h1 className="text-4xl font-bold text-white">
+          <h1 className="text-2xl font-semibold text-gray-900">
             {task.title}
           </h1>
         </div>
 
         {/* Task Information Card */}
-        <div className="bg-gray-800 rounded-xl border border-gray-700 p-8 mb-6">
+        <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-8 mb-6">
           <div className="flex items-start justify-between mb-6">
             <div className="flex-1">
-              <h2 className="text-3xl font-bold text-white mb-4">{task.title}</h2>
+              <h2 className="text-2xl font-semibold text-gray-900 mb-4">{task.title}</h2>
               <div className="flex items-center gap-3 mb-4 flex-wrap">
                 <span
                   className={`px-4 py-2 rounded-full text-sm font-bold uppercase ${getStatusColor(
@@ -529,7 +529,7 @@ export default function TaskDetailPage() {
                   {task.priority}
                 </span>
                 {task.project && (
-                  <span className="px-4 py-2 rounded-lg text-sm font-medium bg-purple-900/30 border border-purple-600 text-purple-400">
+                  <span className="px-4 py-2 rounded-lg text-sm font-medium bg-purple-50 border border-purple-200 text-purple-600">
                     📁 Project: {task.project.name}
                   </span>
                 )}
@@ -539,16 +539,16 @@ export default function TaskDetailPage() {
 
           {task.description && (
             <div className="mb-6">
-              <h3 className="text-lg font-semibold text-gray-300 mb-2">Description</h3>
-              <p className="text-gray-400 whitespace-pre-wrap">{task.description}</p>
+              <h3 className="text-base font-semibold text-gray-900 mb-2">Description</h3>
+              <p className="text-gray-600 whitespace-pre-wrap">{task.description}</p>
             </div>
           )}
 
           {/* Due Date */}
           {task.due_date && (
-            <div className="bg-gray-700/50 rounded-lg p-4 mb-6">
-              <p className="text-gray-400 mb-1">Due Date</p>
-              <p className="text-white font-medium">
+            <div className="bg-gray-50 rounded-lg p-4 mb-6 border border-gray-200">
+              <p className="text-sm text-gray-600 mb-1">Due Date</p>
+              <p className="text-gray-900 font-medium">
                 📅{" "}
                 {new Date(task.due_date).toLocaleDateString("en-US", {
                   weekday: "long",
@@ -562,26 +562,26 @@ export default function TaskDetailPage() {
 
           {/* Google Calendar Sync - Full Width for Better Visibility */}
           {task.due_date && (
-            <div className="bg-gradient-to-r from-blue-900/30 to-purple-900/30 rounded-lg p-5 border-2 border-blue-600/50 mb-6">
+            <div className="bg-gradient-to-r from-indigo-50 to-purple-50 rounded-lg p-5 border-2 border-indigo-200 mb-6">
               <div className="flex items-center gap-3 mb-3">
                 <span className="text-3xl">🗓️</span>
                 <div>
-                  <h3 className="text-lg font-bold text-white">Google Calendar Sync</h3>
-                  <p className="text-xs text-gray-400">Keep your tasks organized in Google Calendar</p>
+                  <h3 className="text-base font-semibold text-gray-900">Google Calendar Sync</h3>
+                  <p className="text-xs text-gray-600">Keep your tasks organized in Google Calendar</p>
                 </div>
               </div>
               
               {/* Already Synced */}
               {task.google_calendar_event_id ? (
-                <div className="bg-green-900/20 border border-green-600/50 rounded-lg p-4">
-                  <p className="text-green-400 font-medium mb-3 flex items-center gap-2">
+                <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                  <p className="text-green-600 font-medium mb-3 flex items-center gap-2">
                     <span className="text-xl">✅</span>
                     <span>Synced with Google Calendar</span>
                   </p>
                   <button
                     onClick={handleUnsyncCalendar}
                     disabled={syncing}
-                    className="px-4 py-2 bg-red-600/20 border border-red-500 text-red-400 rounded hover:bg-red-600/30 disabled:opacity-50 text-sm"
+                    className="px-4 py-2 bg-red-50 border border-red-200 text-red-600 rounded hover:bg-red-100 disabled:opacity-50 text-sm"
                   >
                     {syncing ? 'Removing...' : '🗑️ Remove Sync'}
                   </button>
@@ -591,14 +591,14 @@ export default function TaskDetailPage() {
                 <button
                   onClick={handleSyncCalendar}
                   disabled={syncing}
-                  className="w-full py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 font-medium text-base shadow-lg hover:shadow-xl transition-all"
+                  className="w-full py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 font-medium text-base shadow-sm hover:shadow-md transition-all"
                 >
                   {syncing ? '⏳ Syncing...' : '➕ Add to Google Calendar'}
                 </button>
               ) : (
                 /* Non-Google User - Need to Sign In */
-                <div className="bg-gray-800/50 rounded-lg p-4 border border-gray-600">
-                  <p className="text-gray-400 text-sm mb-4">
+                <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                  <p className="text-gray-600 text-sm mb-4">
                     ℹ️ Sign in with Google to enable calendar sync
                   </p>
                   <button
@@ -616,7 +616,7 @@ export default function TaskDetailPage() {
                         }
                       });
                     }}
-                    className="w-full py-3 bg-white text-gray-900 rounded-lg hover:bg-gray-100 font-medium text-base flex items-center justify-center gap-3 shadow-md hover:shadow-lg transition-all"
+                    className="w-full py-3 bg-white border border-gray-300 text-gray-900 rounded-lg hover:bg-gray-50 font-medium text-base flex items-center justify-center gap-3 shadow-sm hover:shadow-md transition-all"
                   >
                     <svg className="w-5 h-5" viewBox="0 0 24 24">
                       <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
@@ -633,19 +633,19 @@ export default function TaskDetailPage() {
         </div>
 
         {/* Comments Section */}
-        <div className="bg-gray-800 rounded-xl border border-gray-700 p-8">
+        <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-8">
           <div className="mb-6">
-            <h3 className="text-2xl font-bold text-white mb-2">
+            <h3 className="text-xl font-semibold text-gray-900 mb-1">
               Comments ({comments.length})
             </h3>
-            <p className="text-gray-400">Discuss this task with your team</p>
+            <p className="text-sm text-gray-600">Discuss this task with your team</p>
           </div>
 
           {/* Comments List */}
           <div className="space-y-4 mb-6 max-h-[500px] overflow-y-auto pr-2">
             {comments.length === 0 ? (
-              <div className="text-center py-12 bg-gray-700/30 rounded-lg border-2 border-dashed border-gray-600">
-                <p className="text-gray-400 text-lg mb-2">💬 No comments yet</p>
+              <div className="text-center py-12 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
+                <p className="text-gray-600 text-base mb-2">💬 No comments yet</p>
                 <p className="text-gray-500 text-sm">Be the first to share your thoughts!</p>
               </div>
             ) : (
@@ -664,7 +664,7 @@ export default function TaskDetailPage() {
                   <div
                     key={comment._id}
                     className={`flex gap-4 p-4 rounded-lg ${
-                      isOwner ? "bg-blue-900/20 border border-blue-700/50" : "bg-gray-700/50"
+                      isOwner ? "bg-indigo-50 border border-indigo-200" : "bg-gray-50"
                     }`}
                   >
                     {/* Avatar */}
@@ -678,15 +678,15 @@ export default function TaskDetailPage() {
                     <div className="flex-1">
                       <div className="flex items-start justify-between mb-2">
                         <div>
-                          <p className="font-semibold text-white">
+                          <p className="font-semibold text-gray-900">
                             {userName}
                             {isOwner && (
-                              <span className="ml-2 text-xs bg-blue-600 px-2 py-1 rounded">
+                              <span className="ml-2 text-xs bg-indigo-600 text-white px-2 py-1 rounded">
                                 Your comment
                               </span>
                             )}
                           </p>
-                          <p className="text-xs text-gray-400">
+                          <p className="text-xs text-gray-600">
                             {new Date(comment.createdAt).toLocaleString("en-US", {
                               month: "short",
                               day: "numeric",
@@ -704,13 +704,13 @@ export default function TaskDetailPage() {
                               <>
                                 <button
                                   onClick={() => handleEditComment(comment._id)}
-                                  className="text-xs bg-green-600 hover:bg-green-700 px-3 py-1 rounded transition"
+                                  className="text-xs bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded transition"
                                 >
                                   Save
                                 </button>
                                 <button
                                   onClick={() => setEditingId(null)}
-                                  className="text-xs bg-gray-600 hover:bg-gray-700 px-3 py-1 rounded transition"
+                                  className="text-xs bg-gray-300 hover:bg-gray-400 text-gray-900 px-3 py-1 rounded transition"
                                 >
                                   Cancel
                                 </button>
@@ -719,13 +719,13 @@ export default function TaskDetailPage() {
                               <>
                                 <button
                                   onClick={() => startEdit(comment)}
-                                  className="text-xs text-blue-400 hover:text-blue-300 transition"
+                                  className="text-xs text-indigo-600 hover:text-indigo-700 transition"
                                 >
                                   Edit
                                 </button>
                                 <button
                                   onClick={() => handleDeleteComment(comment._id)}
-                                  className="text-xs text-red-400 hover:text-red-300 transition"
+                                  className="text-xs text-red-600 hover:text-red-700 transition"
                                 >
                                   Delete
                                 </button>
@@ -739,11 +739,11 @@ export default function TaskDetailPage() {
                         <textarea
                           value={editContent}
                           onChange={(e) => setEditContent(e.target.value)}
-                          className="w-full bg-gray-800 text-white rounded-lg p-3 border border-gray-600 focus:border-blue-500 focus:outline-none"
+                          className="w-full bg-white text-gray-900 rounded-lg p-3 border border-gray-300 focus:border-indigo-500 focus:outline-none"
                           rows={3}
                         />
                       ) : (
-                        <p className="text-gray-300 whitespace-pre-wrap">{comment.content}</p>
+                        <p className="text-gray-700 whitespace-pre-wrap">{comment.content}</p>
                       )}
                     </div>
                   </div>
@@ -754,7 +754,7 @@ export default function TaskDetailPage() {
           </div>
 
           {/* Comment Input */}
-          <form onSubmit={handleSubmitComment} className="border-t border-gray-700 pt-6">
+          <form onSubmit={handleSubmitComment} className="border-t border-gray-200 pt-6">
             <div className="flex gap-4">
               {currentUser && (
                 <div
@@ -771,18 +771,18 @@ export default function TaskDetailPage() {
                   value={newComment}
                   onChange={(e) => setNewComment(e.target.value)}
                   placeholder="Write a comment..."
-                  className="w-full bg-gray-700 text-white rounded-lg p-4 border border-gray-600 focus:border-blue-500 focus:outline-none resize-none"
+                  className="w-full bg-white text-gray-900 rounded-lg p-4 border border-gray-300 focus:border-indigo-500 focus:outline-none resize-none"
                   rows={3}
                   disabled={submitting}
                 />
                 <div className="flex justify-between items-center mt-3">
-                  <p className="text-sm text-gray-400">
+                  <p className="text-sm text-gray-600">
                     {currentUser ? `Posting as ${currentUser.name}` : "Please login to comment"}
                   </p>
                   <button
                     type="submit"
                     disabled={submitting || !newComment.trim()}
-                    className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-700 disabled:cursor-not-allowed text-white font-semibold px-6 py-3 rounded-lg transition-colors"
+                    className="bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-medium px-6 py-3 rounded-lg transition-colors shadow-sm"
                   >
                     {submitting ? "Posting..." : "Post Comment"}
                   </button>
