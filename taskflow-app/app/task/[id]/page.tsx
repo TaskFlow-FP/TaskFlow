@@ -65,47 +65,48 @@ export default function TaskDetailPage() {
 
   const fetchTask = async () => {
     try {
-      const res = await fetch(`/api/tasks?page=1&limit=1000`);
+      // Gunakan endpoint detail task yang lebih efisien
+      const res = await fetch(`/api/tasks/${taskId}`);
       const data = await res.json();
-      if (res.ok) {
-        const foundTask = data.tasks.find((t: Task) => t._id === taskId);
-        if (foundTask) {
-          if (foundTask.projectId) {
-            try {
-              const projectRes = await fetch(`/api/projects/${foundTask.projectId}`);
+      
+      if (res.ok && data.task) {
+        const foundTask = data.task;
+        
+        // Fetch project info if needed
+        if (foundTask.projectId) {
+          try {
+            const projectRes = await fetch(`/api/projects/${foundTask.projectId}`);
+            
+            if (projectRes.ok) {
+              const projectData = await projectRes.json();
               
-              if (projectRes.ok) {
-                const projectData = await projectRes.json();
-                
-                foundTask.project = {
-                  _id: projectData.project._id,
-                  name: projectData.project.name
-                };
-              }
-            } catch (err) {
+              foundTask.project = {
+                _id: projectData.project._id,
+                name: projectData.project.name
+              };
             }
+          } catch (err) {
+            // Project fetch failed, continue without project info
           }
-          setTask(foundTask);
-        } else {
-          Swal.fire({
-            icon: "error",
-            title: "Task Not Found",
-            text: "This task does not exist or you don't have access to it",
-          }).then(() => router.push("/"));
         }
+        
+        setTask(foundTask);
       } else if (res.status === 401) {
         Swal.fire({
           icon: "error",
           title: "Unauthorized",
           text: "Please login to view this task",
         }).then(() => router.push("/login"));
+      } else {
+        Swal.fire({
+          icon: "error",
+          title: "Task Not Found",
+          text: "This task does not exist or you don't have access to it",
+        }).then(() => router.push("/"));
       }
     } catch (error) {
-      Swal.fire({
-        icon: "error",
-        title: "Error",
-        text: "Failed to load task",
-      }).then(() => router.push("/"));
+      console.error("Error fetching task:", error);
+      // Don't show error on polling updates
     }
   };
 
@@ -158,6 +159,15 @@ export default function TaskDetailPage() {
 
   useEffect(() => {
     initializePage();
+  }, [taskId]);
+
+  // Polling untuk update status task setiap 3 detik
+  useEffect(() => {
+    const intervalId = setInterval(() => {
+      fetchTask();
+    }, 3000);
+
+    return () => clearInterval(intervalId);
   }, [taskId]);
 
   // Auto-sync to calendar if requested

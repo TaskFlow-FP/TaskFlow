@@ -9,6 +9,50 @@ import TaskNotifier from "@/server/TaskNotifier";
 import { getCurrentUser } from "@/helpers/auth";
 import { updateCalendarEvent } from "@/helpers/googleCalendar";
 
+export async function GET(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const currentUser = getCurrentUser(req);
+    const { id } = await params;
+
+    if (!ObjectId.isValid(id)) {
+      return NextResponse.json({ error: "Invalid task ID" }, { status: 400 });
+    }
+
+    const task = await Task.where('_id', new ObjectId(id)).first();
+    
+    if (!task) {
+      return NextResponse.json({ error: "Task not found" }, { status: 404 });
+    }
+
+    // Check if user is member of the project
+    const membership = await Member.query()
+      .where('userId', new ObjectId(currentUser.id))
+      .where('projectId', task.projectId)
+      .where('invitation_status', 'accepted')
+      .first();
+
+    if (!membership) {
+      return NextResponse.json(
+        { error: "You are not a member of this project" },
+        { status: 403 }
+      );
+    }
+
+    return NextResponse.json({ task }, { status: 200 });
+  } catch (error: any) {
+    if (error.message === "Not authenticated" || error.message === "Invalid token") {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+    return NextResponse.json(
+      { error: "Failed to fetch task", details: error.message },
+      { status: 500 }
+    );
+  }
+}
+
 export async function PATCH(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
