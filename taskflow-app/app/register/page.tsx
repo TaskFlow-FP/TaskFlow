@@ -41,42 +41,42 @@ export default function RegisterPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-900">
+    <div className="min-h-screen bg-gray-50">
       <Navbar />
       <div className="flex justify-center items-center py-12 px-4">
-        <div className="w-full max-w-md bg-gray-800 rounded-lg p-8">
-          <h1 className="text-2xl font-bold text-white text-center mb-6">Create Account</h1>
+        <div className="w-full max-w-md bg-white border border-gray-200 rounded-lg shadow-md p-8">
+          <h1 className="text-2xl font-bold text-gray-900 text-center mb-6">Create Account</h1>
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="block text-gray-300 mb-2">Email</label>
+              <label className="block text-gray-700 font-medium mb-2">Email</label>
               <input
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full px-4 py-2 bg-gray-700 text-white rounded border border-gray-600 focus:border-blue-500 focus:outline-none"
+                className="w-full px-4 py-2 bg-white text-gray-900 rounded border border-gray-300 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 focus:outline-none"
                 placeholder="your@email.com"
               />
             </div>
 
             <div>
-              <label className="block text-gray-300 mb-2">Full Name</label>
+              <label className="block text-gray-700 font-medium mb-2">Full Name</label>
               <input
                 type="text"
                 value={fullName}
                 onChange={(e) => setFullName(e.target.value)}
-                className="w-full px-4 py-2 bg-gray-700 text-white rounded border border-gray-600 focus:border-blue-500 focus:outline-none"
+                className="w-full px-4 py-2 bg-white text-gray-900 rounded border border-gray-300 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 focus:outline-none"
                 placeholder="John Doe"
               />
             </div>
 
             <div>
-              <label className="block text-gray-300 mb-2">Password</label>
+              <label className="block text-gray-700 font-medium mb-2">Password</label>
               <input
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full px-4 py-2 bg-gray-700 text-white rounded border border-gray-600 focus:border-blue-500 focus:outline-none"
+                className="w-full px-4 py-2 bg-white text-gray-900 rounded border border-gray-300 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 focus:outline-none"
                 placeholder="••••••••"
               />
             </div>
@@ -84,24 +84,24 @@ export default function RegisterPage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
+              className="w-full py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700 disabled:opacity-50"
             >
               {loading ? "Creating..." : "Create Account"}
             </button>
           </form>
 
-          <div className="text-center text-gray-400 text-sm mt-4">
-            Already have an account? <Link href="/login" className="text-blue-500 hover:underline">Login</Link>
+          <div className="text-center text-gray-600 text-sm mt-4">
+            Already have an account? <Link href="/login" className="text-indigo-600 hover:underline font-medium">Login</Link>
           </div>
 
           <div className="relative my-6">
-            <div className="border-t border-gray-600"></div>
-            <span className="absolute left-1/2 -translate-x-1/2 -top-3 bg-gray-800 px-3 text-gray-400 text-sm">or</span>
+            <div className="border-t border-gray-200"></div>
+            <span className="absolute left-1/2 -translate-x-1/2 -top-3 bg-white px-3 text-gray-500 text-sm">or</span>
           </div>
 
           <button
             onClick={() => window.location.href = '/api/auth/google'}
-            className="w-full py-2 bg-white text-gray-800 rounded hover:bg-gray-100 flex items-center justify-center gap-2"
+            className="w-full py-2 bg-white border border-gray-300 text-gray-700 rounded hover:bg-gray-50 flex items-center justify-center gap-2"
           >
             <svg className="w-5 h-5" viewBox="0 0 24 24">
               <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
