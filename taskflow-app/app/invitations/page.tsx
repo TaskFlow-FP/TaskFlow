@@ -156,7 +156,7 @@ export default function InvitationsPage() {
         {/* Header with gradient */}
         <div className="mb-8">
           <div className="flex items-center gap-3 mb-3">
-            <div className="p-3 bg-blue-700 rounded-xl shadow-lg">
+            <div className="p-3 bg-indigo-600 rounded-xl shadow-lg">
               <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 19v-8.93a2 2 0 01.89-1.664l7-4.666a2 2 0 012.22 0l7 4.666A2 2 0 0121 10.07V19M3 19a2 2 0 002 2h14a2 2 0 002-2M3 19l6.75-4.5M21 19l-6.75-4.5M3 10l6.75 4.5M21 10l-6.75 4.5m0 0l-1.14.76a2 2 0 01-2.22 0l-1.14-.76" />
               </svg>
@@ -168,7 +168,7 @@ export default function InvitationsPage() {
           </div>
           {invitations.length > 0 && (
             <div className="mt-4 flex items-center gap-2 text-sm">
-              <span className="px-3 py-1.5 bg-blue-700 text-white font-semibold rounded-full">
+              <span className="px-3 py-1.5 bg-indigo-600 text-white font-semibold rounded-full">
                 {invitations.length} pending {invitations.length === 1 ? 'invitation' : 'invitations'}
               </span>
             </div>
@@ -176,7 +176,7 @@ export default function InvitationsPage() {
         </div>
 
         {invitations.length === 0 ? (
-          <div className="text-center py-20 bg-blue-100 rounded-2xl border-2 border-dashed border-blue-300">
+          <div className="text-center py-20 bg-gray-50 rounded-2xl border-2 border-dashed border-gray-300">
             <div className="inline-block p-6 bg-white rounded-full shadow-lg mb-6">
               <div className="text-7xl">📭</div>
             </div>
@@ -184,7 +184,7 @@ export default function InvitationsPage() {
             <p className="text-gray-600 mb-6 max-w-md mx-auto">You're all caught up! Check back later for new project collaboration opportunities.</p>
             <button
               onClick={() => router.push('/project')}
-              className="px-6 py-3 bg-blue-700 hover:bg-blue-800 text-white font-semibold rounded-lg transition-colors shadow-md hover:shadow-lg"
+              className="px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-lg transition-colors shadow-md hover:shadow-lg"
             >
               Browse Projects
             </button>
@@ -194,28 +194,28 @@ export default function InvitationsPage() {
             {invitations.map((invitation, index) => (
               <div
                 key={invitation._id}
-                className="bg-white rounded-2xl border-2 border-gray-200 shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden hover:border-blue-400 group"
+                className="bg-white rounded-2xl border-2 border-gray-200 shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden hover:border-indigo-400 group"
                 style={{ animationDelay: `${index * 100}ms` }}
               >
                 {/* Header bar */}
-                <div className="h-2 bg-blue-700"></div>
+                <div className="h-2 bg-indigo-600"></div>
                 
                 <div className="p-6">
                   <div className="flex items-start justify-between gap-4">
                     <div className="flex-1">
                       {/* Project icon and title */}
                       <div className="flex items-start gap-4 mb-4">
-                        <div className="p-3 bg-blue-700 rounded-xl group-hover:scale-110 transition-transform">
+                        <div className="p-3 bg-indigo-600 rounded-xl group-hover:scale-110 transition-transform">
                           <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
                           </svg>
                         </div>
                         <div className="flex-1">
                           <div className="flex items-center gap-3 mb-2">
-                            <h3 className="text-2xl font-bold text-gray-900 group-hover:text-blue-700 transition-colors">
+                            <h3 className="text-2xl font-bold text-gray-900 group-hover:text-indigo-600 transition-colors">
                               {invitation.projectName}
                             </h3>
-                            <span className="px-3 py-1.5 bg-blue-700 text-white text-xs font-bold rounded-full uppercase tracking-wide">
+                            <span className="px-3 py-1.5 bg-indigo-600 text-white text-xs font-bold rounded-full uppercase tracking-wide">
                               {invitation.role}
                             </span>
                           </div>
@@ -230,7 +230,7 @@ export default function InvitationsPage() {
                       <div className="flex flex-wrap items-center gap-4 text-sm">
                         {invitation.invitedBy && (
                           <div className="flex items-center gap-2 bg-gray-50 px-3 py-2 rounded-lg">
-                            <div className="w-8 h-8 bg-blue-700 rounded-full flex items-center justify-center text-white font-bold text-xs">
+                            <div className="w-8 h-8 bg-indigo-600 rounded-full flex items-center justify-center text-white font-bold text-xs">
                               {invitation.invitedBy.name.charAt(0).toUpperCase()}
                             </div>
                             <div>
@@ -259,7 +259,7 @@ export default function InvitationsPage() {
                       <button
                         onClick={() => handleAccept(invitation._id)}
                         disabled={processing === invitation._id}
-                        className="flex items-center justify-center gap-2 px-6 py-3 bg-green-700 hover:bg-green-800 disabled:bg-gray-400 text-white font-semibold rounded-xl transition-all shadow-md hover:shadow-lg disabled:cursor-not-allowed group"
+                        className="flex items-center justify-center gap-2 px-6 py-3 bg-green-600 hover:bg-green-700 disabled:bg-gray-400 text-white font-semibold rounded-xl transition-all shadow-md hover:shadow-lg disabled:cursor-not-allowed group"
                       >
                         {processing === invitation._id ? (
                           <>
@@ -278,7 +278,7 @@ export default function InvitationsPage() {
                       <button
                         onClick={() => handleDecline(invitation._id)}
                         disabled={processing === invitation._id}
-                        className="flex items-center justify-center gap-2 px-6 py-3 bg-red-700 hover:bg-red-800 disabled:bg-gray-400 text-white font-semibold rounded-xl transition-all shadow-md hover:shadow-lg disabled:cursor-not-allowed group"
+                        className="flex items-center justify-center gap-2 px-6 py-3 bg-red-600 hover:bg-red-700 disabled:bg-gray-400 text-white font-semibold rounded-xl transition-all shadow-md hover:shadow-lg disabled:cursor-not-allowed group"
                       >
                         {processing === invitation._id ? (
                           <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
