@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import Task from "@/server/Task";
 import User from "@/server/User";
+import Project from "@/server/Project";
 import TaskUser from "@/server/TaskUser";
 import { getCurrentUser } from "@/helpers/auth";
 import { ObjectId } from "mongodb";
@@ -19,6 +20,9 @@ export async function POST(
     if (!task) {
       return NextResponse.json({ error: "Task not found" }, { status: 404 });
     }
+
+    // Get project details
+    const project = await Project.where("_id", task.projectId).first();
 
     const user = await User.where("_id", new ObjectId(currentUser.id)).first();
     if (!user || !user.google_access_token) {
@@ -51,22 +55,27 @@ export async function POST(
 
     let eventId: string | undefined = taskUser.google_calendar_event_id || undefined;
 
+    const eventDetails = {
+      taskTitle: task.title,
+      taskDescription: task.description || "",
+      projectName: project?.name,
+      status: task.status,
+      priority: task.priority,
+      dueDate: new Date(task.due_date),
+    };
+
     if (eventId) {
       // Update existing event
       await updateCalendarEvent(
         user.google_access_token,
         eventId,
-        task.title,
-        task.description || "",
-        new Date(task.due_date)
+        eventDetails
       );
     } else {
       // Create new event
       eventId = await createCalendarEvent(
         user.google_access_token,
-        task.title,
-        task.description || "",
-        new Date(task.due_date)
+        eventDetails
       );
 
       // Save event ID to task_user relation (not task)
